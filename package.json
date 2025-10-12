@@ -1,0 +1,11 @@
+{
+  "name": "socketinator",
+  "worspaces": "packages/*",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
