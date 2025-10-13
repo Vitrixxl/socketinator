@@ -1,0 +1,36 @@
+{
+  "name": "@socketinator/server",
+  "version": "1.0.0",
+  "description": "Socketinator WebSocket server",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "socketinator-server": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun --format esm",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "elysia": "latest",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bun-types": "latest"
+  },
+  "keywords": ["socketinator", "websocket", "server", "elysia"],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

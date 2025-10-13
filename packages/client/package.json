@@ -1,0 +1,38 @@
+{
+  "name": "@socketinator/client",
+  "version": "1.0.0",
+  "description": "WebSocket client for Socketinator",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun run build:js && bun run build:types",
+    "build:js": "bun build src/index.ts --outdir dist --target browser --format esm --minify",
+    "build:types": "tsc --project tsconfig.build.json",
+    "prepublishOnly": "bun run build",
+    "dev": "bun build src/index.ts --outdir dist --watch"
+  },
+  "dependencies": {
+    "@socketinator/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "keywords": ["socketinator", "websocket", "client", "browser"],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}

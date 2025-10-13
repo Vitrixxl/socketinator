@@ -1,0 +1,58 @@
+{
+  "name": "@socketinator/server-sdk",
+  "version": "1.0.0",
+  "description": "Server SDK for sending data via Socketinator",
+  "type": "module",
+  "main": "./dist/node/index.js",
+  "types": "./dist/node/index.d.ts",
+  "exports": {
+    ".": {
+      "bun": {
+        "types": "./dist/bun/index.d.ts",
+        "import": "./dist/bun/index.js"
+      },
+      "node": {
+        "types": "./dist/node/index.d.ts",
+        "import": "./dist/node/index.js"
+      },
+      "default": {
+        "types": "./dist/node/index.d.ts",
+        "import": "./dist/node/index.js"
+      }
+    },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "import": "./dist/node/index.js"
+    },
+    "./bun": {
+      "types": "./dist/bun/index.d.ts",
+      "import": "./dist/bun/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun run build:node && bun run build:bun && bun run build:types",
+    "build:node": "bun build src/index.ts --outdir dist/node --target node --format esm --minify",
+    "build:bun": "bun build src/index.ts --outdir dist/bun --target bun --format esm --minify",
+    "build:types": "tsc --project tsconfig.build.node.json && tsc --project tsconfig.build.bun.json",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@socketinator/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "keywords": ["socketinator", "server", "sdk", "websocket"],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
