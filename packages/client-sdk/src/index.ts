@@ -1,31 +1,31 @@
-type SocketinatorClientParams = {
-  onConnect: (ev: Event) => any;
-  onDisconnect: (ev: CloseEvent) => any;
-  baseUrl: string;
-};
+import type {
+  MessagesOf,
+  PayloadOf,
+  WSMessageEntry,
+  WSMessageEntryWithUserId,
+} from "@socketinator/types";
 
-export class SocketinatorClient<T extends DataMap> {
-  private callbackMap = new Map<string, (data: any) => any>();
-  private ws: WebSocket;
+export class SocketinatorClient<
+  ServerEntries extends WSMessageEntry,
+  ClientEntries extends WSMessageEntry,
+> {
+  constructor() {}
 
-  constructor({ onConnect, onDisconnect, baseUrl }: SocketinatorClientParams) {
-    this.ws = new WebSocket(new URL("/ws", baseUrl));
-    this.ws.onopen = onConnect;
-    this.ws.onclose = onDisconnect;
-    this.ws.onmessage = this.handleMessage;
-  }
+  send = <
+    Group extends ServerEntries["group"],
+    Key extends MessagesOf<ServerEntries, Group>["key"],
+  >(
+    group: Group,
+    key: Key,
+    data: PayloadOf<ServerEntries, Group, Key>,
+  ) => {};
 
-  private handleMessage = (data: MessageEvent) => {
-    const parsedData: Entry = JSON.parse(data.data);
-    const callback = this.callbackMap.get(parsedData.key);
-    if (!callback) return null;
-    callback(parsedData.payload);
-  };
-
-  on = <K extends T[number]["key"]>(
-    key: K,
-    callback: (payload: Extract<T[number], { key: K }>["payload"]) => any,
-  ) => {
-    this.callbackMap.set(key, callback);
-  };
+  on = <
+    Group extends ClientEntries["group"],
+    Key extends MessagesOf<ClientEntries, Group>["key"],
+  >(
+    group: Group,
+    key: Key,
+    callback: (data: PayloadOf<ClientEntries, Group, Key>) => void,
+  ) => {};
 }
