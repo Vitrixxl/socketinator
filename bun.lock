@@ -21,14 +21,11 @@
         "typescript": "^5",
       },
     },
-    "packages/sdk": {
-      "name": "@socketinator/sdk",
+    "packages/schemas": {
+      "name": "@socketinator/schemas",
       "version": "1.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
+      "dependencies": {
+        "zod": "^4.1.12",
       },
     },
     "packages/server": {
@@ -38,6 +35,8 @@
         "socketinator-server": "./dist/index.js",
       },
       "dependencies": {
+        "@socketinator/schemas": "workspace:*",
+        "@socketinator/types": "workspace:*",
         "elysia": "latest",
         "zod": "^4.1.12",
       },
@@ -60,6 +59,10 @@
     "packages/types": {
       "name": "@socketinator/types",
       "version": "1.0.0",
+      "dependencies": {
+        "@socketinator/schemas": "workspace:*",
+        "zod": "^4.1.12",
+      },
     },
   },
   "packages": {
@@ -69,7 +72,7 @@
 
     "@socketinator/client": ["@socketinator/client@workspace:packages/client"],
 
-    "@socketinator/sdk": ["@socketinator/sdk@workspace:packages/sdk"],
+    "@socketinator/schemas": ["@socketinator/schemas@workspace:packages/schemas"],
 
     "@socketinator/server": ["@socketinator/server@workspace:packages/server"],
 

@@ -1,4 +1,8 @@
-import type { Method, SocketinatorData, SocketinatorSessionData } from "@socketinator/types";
+import type {
+  Method,
+  SocketinatorData,
+  SocketinatorSessionData,
+} from "@socketinator/types";
 
 type FetchParams = {
   path: string;

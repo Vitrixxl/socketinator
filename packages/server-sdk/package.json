@@ -47,7 +47,12 @@
     "@types/bun": "latest",
     "typescript": "^5"
   },
-  "keywords": ["socketinator", "server", "sdk", "websocket"],
+  "keywords": [
+    "socketinator",
+    "server",
+    "sdk",
+    "websocket"
+  ],
   "license": "MIT",
   "publishConfig": {
     "access": "public"

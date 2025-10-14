@@ -1,5 +1,5 @@
 {
-  "name": "@socketinator/client",
+  "name": "@socketinator/client-sdk",
   "version": "1.0.0",
   "description": "WebSocket client for Socketinator",
   "type": "module",
@@ -29,7 +29,12 @@
     "@types/bun": "latest",
     "typescript": "^5"
   },
-  "keywords": ["socketinator", "websocket", "client", "browser"],
+  "keywords": [
+    "socketinator",
+    "websocket",
+    "client",
+    "browser"
+  ],
   "license": "MIT",
   "publishConfig": {
     "access": "public"

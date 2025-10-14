@@ -1,5 +1,3 @@
-import type { Entry, DataMap } from "@socketinator/types";
-
 type SocketinatorClientParams = {
   onConnect: (ev: Event) => any;
   onDisconnect: (ev: CloseEvent) => any;

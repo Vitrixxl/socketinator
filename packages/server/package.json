@@ -18,6 +18,8 @@
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
+    "@socketinator/schemas": "workspace:*",
+    "@socketinator/types": "workspace:*",
     "elysia": "latest",
     "zod": "^4.1.12"
   },
@@ -25,7 +27,12 @@
     "@types/bun": "latest",
     "bun-types": "latest"
   },
-  "keywords": ["socketinator", "websocket", "server", "elysia"],
+  "keywords": [
+    "socketinator",
+    "websocket",
+    "server",
+    "elysia"
+  ],
   "license": "MIT",
   "publishConfig": {
     "access": "public"

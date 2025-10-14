@@ -1,5 +1,5 @@
 {
-  "name": "@socketinator/types",
+  "name": "@socketinator/schemas",
   "version": "1.0.0",
   "description": "Shared TypeScript types for Socketinator",
   "type": "module",
@@ -24,7 +24,6 @@
     "access": "public"
   },
   "dependencies": {
-    "zod": "^4.1.12",
-    "@socketinator/schemas": "workspace:*"
+    "zod": "^4.1.12"
   }
 }
