@@ -1,6 +1,6 @@
 {
   "name": "@socketinator/client-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "WebSocket client for Socketinator",
   "type": "module",
   "main": "./dist/index.js",
@@ -23,11 +23,11 @@
     "dev": "bun build src/index.ts --outdir dist --watch"
   },
   "dependencies": {
-    "@socketinator/types": "workspace:*",
     "@socketinator/schemas": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@socketinator/types": "workspace:*",
     "typescript": "^5"
   },
   "keywords": [

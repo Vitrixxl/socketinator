@@ -1,9 +1,5 @@
 export * from "./schemas";
 
-export type WithBase<Entries extends WSCommandEntry> =
-  | BaseWSCommands
-  | Exclude<Entries, { group: BaseGroup }>;
-
 export type WSCommand<K extends PropertyKey = string, P = unknown> = {
   key: K;
   payload: P;

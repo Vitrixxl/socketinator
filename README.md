@@ -1,123 +1,143 @@
- # Socketinator
+# Socketinator
 
-Socketinator is a Bun-powered WebSocket toolkit that pairs an Elysia server with type-safe client and server SDKs. It keeps
-real-time messaging predictable by sharing schemas, actions, and event contracts across the stack.
+Socketinator is a Bun-powered WebSocket toolkit that pairs an Elysia-based relay server with type-safe SDKs for browsers and backend services. It keeps real-time messaging predictable by sharing Zod schemas and command contracts across the stack.
 
 ## What It Does
-- Provides a production-ready WebSocket server (`@socketinator/server`) built on Elysia and Bun.
-- Ships client and server SDKs (`@socketinator/client-sdk`, `@socketinator/server-sdk`) that wrap low-level socket APIs with
-strongly typed helpers.
+- Provides a production-ready WebSocket relay (`@socketinator/server`) built on Elysia and Bun.
+- Ships client and server SDKs (`@socketinator/client-sdk`, `@socketinator/server-sdk`) that wrap low-level socket APIs with strongly typed helpers.
 - Manages authenticated sessions and user targeting via shared transport primitives.
-- Emits built-in lifecycle actions (`base/connect`, `base/disconnect`) so consumers can react consistently to socket state
-changes.
-- Validates every incoming and outgoing action with Zod to guarantee runtime safety.
+- Emits built-in lifecycle commands (`base/connect`, `base/disconnect`) so consumers can react consistently to socket state changes.
+- Validates every incoming and outgoing command with Zod to guarantee runtime safety.
 
 ## Why Type Safety Matters Here
-- **Shared contracts**: Client and server use the same `group` + `action` definitions, so adding a new action in one place
-automatically updates both ends.
-- **Compile-time guarantees**: Utilities like `CommandsOf` and `CommandPayloadOf` ensure you can only send or subscribe to commands
-that exist. Mistyped keys fail fast during development.
-- **Safe parsing**: All raw frames pass through Zod schemas before dispatch so malformed payloads never reach your business
-logic.
-- **Ergonomic handlers**: Subscription helpers return properly typed payloads, giving you rich IDE autocompletion without
-manual casting.
+- **Shared contracts**: Client and server use the same `group` + `command` definitions, so adding a new command in one place automatically updates both ends.
+- **Compile-time guarantees**: Utilities like `CommandsOf` and `CommandPayloadOf` ensure you can only send or subscribe to commands that exist. Mistyped keys fail fast during development.
+- **Safe parsing**: All raw frames pass through Zod schemas before dispatch, so malformed payloads never reach your business logic.
+- **Ergonomic handlers**: Subscription helpers return properly typed payloads, giving you rich IDE autocompletion without manual casting.
 
-## How to use it ?
-- **Install**
-  ```bash
-  npm install @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/types @socketinator/schemas
-  ```
-  ```bash
-  bun add @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/types @socketinator/schemas
-  ```
-- **Définir vos commandes partagées**
-  ```ts
-  import type { WSCommand, WSCommandEntry, WithBase } from "@socketinator/types";
+## How to Use It
 
-  type ChatMessage = WSCommand<"message", { text: string }>;
+### Install
+```bash
+npm install @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/types @socketinator/schemas
+```
+```bash
+bun add @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/types @socketinator/schemas
+```
 
-  type ChatEntry = WSCommandEntry & {
-    group: "chat";
-    command: ChatMessage;
-  };
+### Share command definitions
+```ts
+// commands.ts
+import type {
+  WSCommand,
+  WSCommandEntryWithUserId,
+  BaseWSCommands,
+} from "@socketinator/types";
 
-  export type ClientCommands = WithBase<ChatEntry>;
-  export type ServerCommands = ClientCommands;
-  ```
-- **Client SDK (navigateur)**
-  ```ts
-  import { SocketinatorClient } from "@socketinator/client-sdk";
-  import type { ClientCommands } from "./commands";
+type ChatMessageCommand = WSCommand<"message", { text: string }>;
 
-  const client = new SocketinatorClient<ClientCommands, ClientCommands>({
-    url: "wss://your-server/ws",
-  });
+type ChatClientEntry = {
+  group: "chat";
+  command: ChatMessageCommand;
+};
 
-  client.on("chat", "message", ({ text }) => {
-    console.log("Message reçu:", text);
-  });
+export type ClientReadableCommands = BaseWSCommands | ChatClientEntry;
+export type ClientWritableCommands = ChatClientEntry;
 
-  client.send("chat", "message", { text: "Hello!" });
-  ```
-- **Server SDK (backend vers le relayeur)**
-  ```ts
-  import { Socketinator } from "@socketinator/server-sdk";
-  import type { ServerCommands } from "./commands";
+type ChatRelayEntry = WSCommandEntryWithUserId<string> & {
+  group: "chat";
+  command: ChatMessageCommand;
+};
 
-  type UserId = string;
+export type RelayCommands = ChatRelayEntry;
+```
 
-  const server = new Socketinator<UserId, ServerCommands, ClientCommands>({
-    url: "wss://your-server/ws/server",
-  });
+### Browser client usage
+```ts
+import { SocketinatorClient } from "@socketinator/client-sdk";
+import type {
+  ClientReadableCommands,
+  ClientWritableCommands,
+} from "./commands";
 
-  server.send("chat", "message", "user-123", { text: "Bienvenue !" });
-  server.on("chat", "message", (payload, userId) => {
-    console.log(`Message de ${userId}:`, payload.text);
-  });
-  ```
-- **Lancer le relayeur WebSocket**
-  ```bash
-  bunx --bun @socketinator/server
-  ```
-- **Types dérivés et helpers**
-  ```ts
-  import type {
-    CommandPayloadOf,
-    CommandsOf,
-    WSCommandEntry,
-  } from "@socketinator/types";
+const client = new SocketinatorClient<
+  ClientReadableCommands,
+  ClientWritableCommands
+>({
+  url: "wss://your-relay.example.com/ws",
+});
 
-  type Entries = ClientCommands;
-  type ChatCommandKeys = CommandsOf<Entries, "chat">["key"]; // "message"
-  type ChatPayload = CommandPayloadOf<Entries, "chat", "message">;
-  ```
+client.on("chat", "message", ({ text }) => {
+  console.log("Message received:", text);
+});
+
+client.on("base", "connect", () => {
+  client.send("chat", "message", { text: "Hello from the browser!" });
+});
+```
+
+### Backend broadcaster (server SDK)
+```ts
+import { Socketinator } from "@socketinator/server-sdk";
+import type { RelayCommands } from "./commands";
+
+type UserId = string;
+
+const relay = new Socketinator<UserId, RelayCommands, RelayCommands>({
+  url: "wss://your-relay.example.com/ws/server",
+});
+
+relay.send("chat", "message", "user-123", { text: "Welcome aboard!" });
+
+relay.on("chat", "message", (payload, userId) => {
+  console.log(`Client ${userId} said: ${payload.text}`);
+});
+
+relay.setSession({
+  token: "session-token",
+  userId: "user-123",
+  exp: Date.now() + 1000 * 60 * 60,
+});
+```
+
+### Run the WebSocket relay
+```bash
+bunx --bun @socketinator/server
+```
+
+### Type utilities
+```ts
+import type { CommandsOf, CommandPayloadOf } from "@socketinator/types";
+import type { ClientReadableCommands } from "./commands";
+
+type ChatKeys = CommandsOf<ClientReadableCommands, "chat">["key"];
+type ChatPayload = CommandPayloadOf<
+  ClientReadableCommands,
+  "chat",
+  "message"
+>;
+```
 
 ## Packages
 - `@socketinator/server`: Bun CLI for running the WebSocket relay (launch with `bunx --bun @socketinator/server`).
-- `@socketinator/client-sdk`: Browser-friendly client that queues handlers, parses actions, and serialises payloads.
-- `@socketinator/server-sdk`: Helper layer for backend services that need to push actions to connected users.
-- `@socketinator/types`: Shared Zod schemas and TypeScript utilities underpinning the action model.
-- `@socketinator/schemas`: Zod schemas for validating the trasmitted data insuring only safe data.
+- `@socketinator/client-sdk`: Browser-friendly client that queues handlers, parses commands, and serialises payloads.
+- `@socketinator/server-sdk`: Helper layer for backend services that need to push commands to connected users.
+- `@socketinator/types`: Shared Zod schemas and TypeScript utilities underpinning the command model.
+- `@socketinator/schemas`: Zod schemas for validating the transmitted data, ensuring only safe payloads.
 
 ## Getting Started
 `bun install`
 
 ### Development
-
-- Run the WebSocket server during development:
-
-`bun --filter @socketinator/server dev`
-- Build all packages:
-
-`bun run build`
+- Run the WebSocket server during development: `bun --filter @socketinator/server dev`
+- Build all packages: `bun run build`
 
 ## Project Stack
-
 - Runtime: Bun
 - Server framework: Elysia
 - Validation: Zod
-- Bundling: Bun build with tsc checking
+- Bundling: Bun build with TypeScript checking
 
-## In the future ?
-
-- I need to add a limit rate and a list of allowed group/key pair to prevent abusive clients from flooding the socket with unauthorized actions or overwhelming the server.
+## In the Future
+- Add rate limiting and an allow-list of `group`/`key` pairs to prevent abusive clients from flooding the relay with unauthorized commands.
+- Adding global event that will be passed to every connected user
