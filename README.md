@@ -23,7 +23,74 @@ logic.
 manual casting.
 
 ## How to use it ?
+- **Install**
+  ```bash
+  npm install @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/types @socketinator/schemas
+  ```
+  ```bash
+  bun add @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/types @socketinator/schemas
+  ```
+- **Définir vos commandes partagées**
+  ```ts
+  import type { WSCommand, WSCommandEntry, WithBase } from "@socketinator/types";
 
+  type ChatMessage = WSCommand<"message", { text: string }>;
+
+  type ChatEntry = WSCommandEntry & {
+    group: "chat";
+    command: ChatMessage;
+  };
+
+  export type ClientCommands = WithBase<ChatEntry>;
+  export type ServerCommands = ClientCommands;
+  ```
+- **Client SDK (navigateur)**
+  ```ts
+  import { SocketinatorClient } from "@socketinator/client-sdk";
+  import type { ClientCommands } from "./commands";
+
+  const client = new SocketinatorClient<ClientCommands, ClientCommands>({
+    url: "wss://your-server/ws",
+  });
+
+  client.on("chat", "message", ({ text }) => {
+    console.log("Message reçu:", text);
+  });
+
+  client.send("chat", "message", { text: "Hello!" });
+  ```
+- **Server SDK (backend vers le relayeur)**
+  ```ts
+  import { Socketinator } from "@socketinator/server-sdk";
+  import type { ServerCommands } from "./commands";
+
+  type UserId = string;
+
+  const server = new Socketinator<UserId, ServerCommands, ClientCommands>({
+    url: "wss://your-server/ws/server",
+  });
+
+  server.send("chat", "message", "user-123", { text: "Bienvenue !" });
+  server.on("chat", "message", (payload, userId) => {
+    console.log(`Message de ${userId}:`, payload.text);
+  });
+  ```
+- **Lancer le relayeur WebSocket**
+  ```bash
+  bunx --bun @socketinator/server
+  ```
+- **Types dérivés et helpers**
+  ```ts
+  import type {
+    CommandPayloadOf,
+    CommandsOf,
+    WSCommandEntry,
+  } from "@socketinator/types";
+
+  type Entries = ClientCommands;
+  type ChatCommandKeys = CommandsOf<Entries, "chat">["key"]; // "message"
+  type ChatPayload = CommandPayloadOf<Entries, "chat", "message">;
+  ```
 
 ## Packages
 - `@socketinator/server`: Bun CLI for running the WebSocket relay (launch with `bunx --bun @socketinator/server`).
