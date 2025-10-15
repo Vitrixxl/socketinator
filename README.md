@@ -30,17 +30,16 @@ manual casting.
 - `@socketinator/schemas`: Zod schemas for validating the trasmitted data insuring only safe data.
 
 ## Getting Started
-```bash
-bun install
+`bun install`
 
 ### Development
 
 - Run the WebSocket server during development:
 
-bun --filter @socketinator/server dev
+`bun --filter @socketinator/server dev`
 - Build all packages:
 
-bun run build
+`bun run build`
 
 ## Project Stack
 
