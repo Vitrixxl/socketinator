@@ -1,12 +1,12 @@
 import type {
-  WsClientAction,
-  WsServerActionMessage,
+  WsClientCommand,
+  WsServerCommandPayload,
   WsServerSessionEvent,
 } from "@socketinator/types";
 
 import {
   wsServerMessageSchema,
-  wsClientActionSchema,
+  wsClientCommandSchema,
 } from "@socketinator/schemas";
 import { env } from "bun";
 import { Cookie, Elysia } from "elysia";
@@ -15,7 +15,10 @@ import { ElysiaWS } from "elysia/dist/ws";
 // Set by the backend, with the key create-session
 const expSessionMap = new Map<string, { userId: string; exp: number }>();
 // Set by the socket server when a user is joining by retrieving the session token, verifying the exp and getting the userId
-const userWsMap = new Map<string, { ws: ElysiaWS; sessionToken: string }[]>();
+const userWsMap = new Map<
+  string | number,
+  { ws: ElysiaWS; sessionToken: string }[]
+>();
 
 const SECRET = env.SECRET;
 const port = env.PORT;
@@ -23,9 +26,9 @@ const sessionCookieName = env.SESSION_COOKIE_NAME ?? "session_token";
 
 const isExpired = (exp: number): boolean => Date.now() > exp;
 
-const toClientAction = (data: WsServerActionMessage): WsClientAction => ({
+const toClientCommand = (data: WsServerCommandPayload): WsClientCommand => ({
   group: data.group,
-  action: data.action,
+  command: data.command,
 });
 
 const handleSessionEvent = (data: WsServerSessionEvent["payload"]) => {
@@ -88,11 +91,11 @@ const app = new Elysia()
       serverWs.send({
         group: data.group,
         userId,
-        action: data.action,
+        command: data.command,
       });
     },
 
-    body: wsClientActionSchema,
+    body: wsClientCommandSchema,
 
     beforeHandle: ({ cookie, status }) => {
       const sessionToken = cookie[sessionCookieName] as Cookie<string>;
@@ -117,14 +120,14 @@ const app = new Elysia()
     },
 
     message: async (_, data) => {
-      switch (data.action) {
+      switch (data.type) {
         case "data": {
           const clients = userWsMap.get(data.payload.userId);
           if (!clients || clients.length === 0) break;
 
-          const clientAction = toClientAction(data.payload);
+          const clientCommand = toClientCommand(data.payload);
           for (const { ws } of clients) {
-            ws.send(clientAction);
+            ws.send(clientCommand);
           }
           break;
         }

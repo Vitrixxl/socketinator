@@ -1,21 +1,22 @@
-import { wsClientActionSchema } from "@socketinator/schemas";
+import { wsClientCommandSchema } from "@socketinator/schemas";
 import type {
-  ActionsOf,
-  BaseWSActions,
+  CommandsOf,
   GroupHandlers,
   HandlerStore,
-  PayloadOf,
+  CommandPayloadOf,
   SocketinatorClientParams,
-  WSActionEntry,
+  WSCommandEntry,
 } from "@socketinator/types";
 
 export class SocketinatorClient<
-  ReadEntries extends WSActionEntry & BaseWSActions,
-  WriteEntries extends WSActionEntry,
+  ReadEntries extends WSCommandEntry = never,
+  WriteEntries extends WSCommandEntry = never,
 > {
   private ws: WebSocket;
   private handlerStore: HandlerStore<ReadEntries> = {};
 
+  onConnect: ((e: Event) => any) | null = null;
+  onClose: ((e: CloseEvent) => null) | null = null;
   constructor({ url }: SocketinatorClientParams) {
     this.ws = new WebSocket(url);
 
@@ -24,23 +25,15 @@ export class SocketinatorClient<
     };
 
     this.ws.onopen = (event) => {
-      this.dispatch({
-        group: "base",
-        action: {
-          key: "connect",
-          payload: event,
-        },
-      } as ReadEntries);
+      if (this.onConnect) {
+        this.onConnect(event);
+      }
     };
 
     this.ws.onclose = (event) => {
-      this.dispatch({
-        group: "base",
-        action: {
-          key: "disconnect",
-          payload: event,
-        },
-      } as ReadEntries);
+      if (this.onClose) {
+        this.onClose(event);
+      }
     };
   }
 
@@ -51,7 +44,7 @@ export class SocketinatorClient<
 
   private parseIncoming(raw: unknown): ReadEntries {
     const candidate = typeof raw === "string" ? JSON.parse(raw) : raw;
-    const result = wsClientActionSchema.safeParse(candidate);
+    const result = wsClientCommandSchema.safeParse(candidate);
 
     if (!result.success) {
       throw new Error(`Invalid WS payload: ${result.error.message}`);
@@ -62,7 +55,7 @@ export class SocketinatorClient<
 
   private dispatch<Entry extends ReadEntries>(message: Entry) {
     type Group = Entry["group"];
-    type Key = Entry["action"]["key"];
+    type Key = Entry["command"]["key"];
 
     const groupHandlers = this.handlerStore[message.group as Group] as
       | GroupHandlers<ReadEntries, Group>
@@ -70,25 +63,25 @@ export class SocketinatorClient<
 
     if (!groupHandlers) return;
 
-    const callbacks = groupHandlers[message.action.key as Key] as
-      | Set<(payload: Entry["action"]["payload"]) => void>
+    const callbacks = groupHandlers[message.command.key as Key] as
+      | Set<(payload: Entry["command"]["payload"]) => void>
       | undefined;
 
-    callbacks?.forEach((fn) => fn(message.action.payload));
+    callbacks?.forEach((fn) => fn(message.command.payload));
   }
 
   send = <
     Group extends WriteEntries["group"],
-    Key extends ActionsOf<WriteEntries, Group>["key"],
+    Key extends CommandsOf<WriteEntries, Group>["key"],
   >(
     group: Group,
     key: Key,
-    payload: PayloadOf<WriteEntries, Group, Key>,
+    payload: CommandPayloadOf<WriteEntries, Group, Key>,
   ) => {
     this.ws.send(
       JSON.stringify({
         group,
-        action: {
+        command: {
           key,
           payload,
         },
@@ -98,11 +91,11 @@ export class SocketinatorClient<
 
   on = <
     Group extends ReadEntries["group"],
-    Key extends ActionsOf<ReadEntries, Group>["key"],
+    Key extends CommandsOf<ReadEntries, Group>["key"],
   >(
     group: Group,
     key: Key,
-    callback: (data: PayloadOf<ReadEntries, Group, Key>) => void,
+    callback: (payload: CommandPayloadOf<ReadEntries, Group, Key>) => void,
   ) => {
     const groupHandlers = (this.handlerStore[group] ??= {} as GroupHandlers<
       ReadEntries,
@@ -110,7 +103,7 @@ export class SocketinatorClient<
     >);
 
     const callbacks = (groupHandlers[key] ??= new Set<
-      (data: PayloadOf<ReadEntries, Group, Key>) => void
+      (payload: CommandPayloadOf<ReadEntries, Group, Key>) => void
     >());
 
     callbacks.add(callback);

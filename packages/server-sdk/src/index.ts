@@ -1,65 +1,76 @@
-import { wsClientActionSchema } from "@socketinator/schemas";
+import { wsServerCommandPayloadSchema } from "@socketinator/schemas";
 import type {
-  ActionsOf,
+  CommandsOf,
   HandlerStoreWithUserId,
-  PayloadOf,
-  WSActionEntryWithUserId,
+  CommandPayloadOf,
+  SocketinatorServerParams,
+  WSCommandEntryWithUserId,
+  WsServerSessionEvent,
+  WsSetSession,
+  WsDeleteSession,
+  WsServerDataEvent,
 } from "@socketinator/types";
 
 type GroupHandlersWithUserId<
-  Entries extends WSActionEntryWithUserId<UserId>,
+  Entries extends WSCommandEntryWithUserId<UserId>,
   Group extends Entries["group"],
   UserId extends string | number,
 > = NonNullable<HandlerStoreWithUserId<Entries, UserId>[Group]>;
 
 export class Socketinator<
   UserId extends string | number,
-  ServerEntries extends WSActionEntryWithUserId<UserId>,
-  ClientEntries extends WSActionEntryWithUserId<UserId>,
+  ServerEntries extends WSCommandEntryWithUserId<UserId>,
+  ClientEntries extends WSCommandEntryWithUserId<UserId>,
 > {
-  private readonly sockets = new Map<UserId, WebSocket>();
   private readonly handlerStore: HandlerStoreWithUserId<ClientEntries, UserId> =
     {};
+  private ws: WebSocket | null = null;
+  private onConnect: ((e: Event) => void) | null = null;
+  private onClose: ((e: CloseEvent) => void) | null = null;
+  constructor({ url }: SocketinatorServerParams) {
+    this.ws = new WebSocket(url);
 
-  registerConnection(userId: UserId, socket: WebSocket) {
-    this.sockets.set(userId, socket);
-
-    socket.addEventListener("message", (event) =>
-      this.handleRawMessage(event.data, userId),
-    );
-
-    socket.addEventListener("close", () => {
-      if (this.sockets.get(userId) === socket) {
-        this.sockets.delete(userId);
+    this.ws.onmessage = (event) => {
+      this.handleRawMessage(event.data);
+    };
+    this.ws.onopen = (e: Event) => {
+      if (this.onConnect != null) {
+        this.onConnect(e);
       }
-    });
+    };
+    this.ws.onclose = (e: CloseEvent) => {
+      if (this.onClose != null) {
+        this.onClose(e);
+        this.ws = null;
+      }
+    };
   }
 
-  private handleRawMessage(raw: unknown, userId: UserId) {
-    const parsed = this.parseIncoming(raw, userId);
+  private handleRawMessage(raw: unknown) {
+    const parsed = this.parseIncoming(raw);
     this.dispatch(parsed);
   }
 
-  private parseIncoming(raw: unknown, userId: UserId): ClientEntries {
+  private parseIncoming = (raw: unknown): ClientEntries => {
     const candidate = typeof raw === "string" ? JSON.parse(raw) : raw;
-    const result = wsClientActionSchema.safeParse(candidate);
+    const result = wsServerCommandPayloadSchema.safeParse(candidate);
 
     if (!result.success) {
       throw new Error(`Invalid WS payload: ${result.error.message}`);
     }
 
-    const { group, action } = result.data;
+    const { group, command, userId } = result.data;
 
     return {
       group,
       userId,
-      action,
+      command,
     } as ClientEntries;
-  }
+  };
 
-  private dispatch<Entry extends ClientEntries>(message: Entry) {
+  private dispatch = <Entry extends ClientEntries>(message: Entry) => {
     type Group = Entry["group"];
-    type Key = Entry["action"]["key"];
+    type Key = Entry["command"]["key"];
 
     const groupHandlers = this.handlerStore[message.group as Group] as
       | GroupHandlersWithUserId<ClientEntries, Group, UserId>
@@ -67,46 +78,51 @@ export class Socketinator<
 
     if (!groupHandlers) return;
 
-    const callbacks = groupHandlers[message.action.key as Key];
+    const callbacks = groupHandlers[message.command.key as Key];
     callbacks?.forEach((callback) =>
       callback(
-        message.action.payload as PayloadOf<ClientEntries, Group, Key>,
+        message.command.payload as CommandPayloadOf<ClientEntries, Group, Key>,
         message.userId,
       ),
     );
-  }
+  };
+
+  private safeSend = (data: WsServerSessionEvent | WsServerDataEvent) => {
+    if (this.ws) {
+      this.ws.send(JSON.stringify(data));
+    }
+  };
 
   send = <
     Group extends ServerEntries["group"],
-    Key extends ActionsOf<ServerEntries, Group>["key"],
+    Key extends CommandsOf<ServerEntries, Group>["key"],
   >(
     group: Group,
     key: Key,
     userId: UserId,
-    data: PayloadOf<ServerEntries, Group, Key>,
+    payload: CommandPayloadOf<ServerEntries, Group, Key>,
   ) => {
-    const socket = this.sockets.get(userId);
-    if (!socket) return;
-
-    socket.send(
-      JSON.stringify({
+    this.safeSend({
+      type: "data",
+      payload: {
         group,
-        action: {
+        userId,
+        command: {
           key,
-          payload: data,
+          payload,
         },
-      }),
-    );
+      },
+    });
   };
 
   on = <
     Group extends ClientEntries["group"],
-    Key extends ActionsOf<ClientEntries, Group>["key"],
+    Key extends CommandsOf<ClientEntries, Group>["key"],
   >(
     group: Group,
     key: Key,
     callback: (
-      data: PayloadOf<ClientEntries, Group, Key>,
+      data: CommandPayloadOf<ClientEntries, Group, Key>,
       userId: UserId,
     ) => void,
   ) => {
@@ -114,10 +130,32 @@ export class Socketinator<
       {} as GroupHandlersWithUserId<ClientEntries, Group, UserId>);
 
     const callbacks = (groupHandlers[key] ??= new Set<
-      (data: PayloadOf<ClientEntries, Group, Key>, userId: UserId) => void
+      (
+        data: CommandPayloadOf<ClientEntries, Group, Key>,
+        userId: UserId,
+      ) => void
     >());
 
     callbacks.add(callback);
     return () => callbacks.delete(callback);
+  };
+
+  setSession = (params: Omit<WsSetSession, "key">) => {
+    this.safeSend({
+      type: "session",
+      payload: {
+        key: "set",
+        ...params,
+      },
+    } satisfies WsServerSessionEvent);
+  };
+  deleteSession = (params: Omit<WsDeleteSession, "key">) => {
+    this.safeSend({
+      type: "session",
+      payload: {
+        key: "delete",
+        ...params,
+      },
+    } satisfies WsServerSessionEvent);
   };
 }

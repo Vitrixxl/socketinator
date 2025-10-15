@@ -1,63 +1,72 @@
 export * from "./schemas";
 
-export type WSAction<K extends PropertyKey = string, P = unknown> = {
+export type WithBase<Entries extends WSCommandEntry> =
+  | BaseWSCommands
+  | Exclude<Entries, { group: BaseGroup }>;
+
+export type WSCommand<K extends PropertyKey = string, P = unknown> = {
   key: K;
   payload: P;
 };
 
-export type WSActionEntry = {
+export type WSCommandEntry = {
   group: string;
-  action: WSAction;
+  command: WSCommand;
 };
 
-export type WSActionEntryWithUserId<UserId extends string | number> = {
+export type WSCommandEntryWithUserId<UserId extends string | number> = {
   group: string;
   userId: UserId;
-  action: WSAction;
+  command: WSCommand;
 };
 
-export type ActionsOf<
-  Entries extends WSActionEntry,
+export type CommandsOf<
+  Entries extends WSCommandEntry,
   Group extends Entries["group"],
-> = Extract<Entries, { group: Group }>["action"];
+> = Extract<Entries, { group: Group }>["command"];
 
-export type PayloadOf<
-  Entries extends WSActionEntry,
+export type CommandPayloadOf<
+  Entries extends WSCommandEntry,
   Group extends Entries["group"],
-  Key extends ActionsOf<Entries, Group>["key"],
-> = Extract<ActionsOf<Entries, Group>, { key: Key }>["payload"];
+  Key extends CommandsOf<Entries, Group>["key"],
+> = Extract<CommandsOf<Entries, Group>, { key: Key }>["payload"];
 
-export type BaseWSActions = {
+export type BaseWSCommands = {
   group: "base";
-  action:
+  command:
     | { key: "connect"; payload: Event }
-    | { key: "disconnect"; payload: null };
+    | { key: "disconnect"; payload: CloseEvent };
 };
 
-export type HandlerStore<Entries extends WSActionEntry> = {
+export type BaseGroup = BaseWSCommands["group"];
+
+export type HandlerStore<Entries extends WSCommandEntry> = {
   [Group in Entries["group"]]?: {
-    [Key in ActionsOf<Entries, Group>["key"]]?: Set<
-      (payload: PayloadOf<Entries, Group, Key>) => void
+    [Key in CommandsOf<Entries, Group>["key"]]?: Set<
+      (payload: CommandPayloadOf<Entries, Group, Key>) => void
     >;
   };
 };
 
 export type HandlerStoreWithUserId<
-  Entries extends WSActionEntry,
+  Entries extends WSCommandEntry,
   UserId extends string | number,
 > = {
   [Group in Entries["group"]]?: {
-    [Key in ActionsOf<Entries, Group>["key"]]?: Set<
-      (payload: PayloadOf<Entries, Group, Key>, userId: UserId) => void
+    [Key in CommandsOf<Entries, Group>["key"]]?: Set<
+      (payload: CommandPayloadOf<Entries, Group, Key>, userId: UserId) => void
     >;
   };
 };
 
 export type GroupHandlers<
-  Entries extends WSActionEntry,
+  Entries extends WSCommandEntry,
   Group extends Entries["group"],
 > = NonNullable<HandlerStore<Entries>[Group]>;
 
 export type SocketinatorClientParams = {
+  url: string;
+};
+export type SocketinatorServerParams = {
   url: string;
 };

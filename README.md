@@ -15,12 +15,15 @@ changes.
 ## Why Type Safety Matters Here
 - **Shared contracts**: Client and server use the same `group` + `action` definitions, so adding a new action in one place
 automatically updates both ends.
-- **Compile-time guarantees**: Utilities like `ActionsOf` and `PayloadOf` ensure you can only send or subscribe to actions
+- **Compile-time guarantees**: Utilities like `CommandsOf` and `CommandPayloadOf` ensure you can only send or subscribe to commands
 that exist. Mistyped keys fail fast during development.
 - **Safe parsing**: All raw frames pass through Zod schemas before dispatch so malformed payloads never reach your business
 logic.
 - **Ergonomic handlers**: Subscription helpers return properly typed payloads, giving you rich IDE autocompletion without
 manual casting.
+
+## How to use it ?
+
 
 ## Packages
 - `@socketinator/server`: Bun CLI for running the WebSocket relay (launch with `bunx --bun @socketinator/server`).

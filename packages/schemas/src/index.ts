@@ -1,20 +1,20 @@
 import z from "zod";
 
-export const wsActionPayloadSchema = z.object({
+export const wsCommandSchema = z.object({
   key: z.string(),
   payload: z.any(),
 });
 
 // SERVER SCHEMAS
-export const wsServerActionSchema = z.object({
+export const wsServerCommandPayloadSchema = z.object({
   group: z.string(),
-  userId: z.string(),
-  action: wsActionPayloadSchema,
+  userId: z.string().or(z.number()),
+  command: wsCommandSchema,
 });
 
 export const wsServerDataEventSchema = z.object({
-  action: z.literal("data"),
-  payload: wsServerActionSchema,
+  type: z.literal("data"),
+  payload: wsServerCommandPayloadSchema,
 });
 
 export const wsSetSessionSchema = z.object({
@@ -31,7 +31,7 @@ export const wsDeleteSessionSchema = z.object({
 });
 
 export const wsServerSessionEventSchema = z.object({
-  action: z.literal("session"),
+  type: z.literal("session"),
   payload: z.union([wsSetSessionSchema, wsDeleteSessionSchema]),
 });
 
@@ -41,8 +41,7 @@ export const wsServerMessageSchema = z.union([
 ]);
 
 // CLIENT SCHEMA
-
-export const wsClientActionSchema = z.object({
+export const wsClientCommandSchema = z.object({
   group: z.string(),
-  action: wsActionPayloadSchema.shape,
+  command: wsCommandSchema,
 });
