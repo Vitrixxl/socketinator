@@ -25,97 +25,9 @@ npm install @socketinator/client-sdk @socketinator/server-sdk @socketinator/serv
 bun add @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/types @socketinator/schemas
 ```
 
-### Share command definitions
-```ts
-// commands.ts
-import type {
-  WSCommand,
-  WSCommandEntryWithUserId,
-  BaseWSCommands,
-} from "@socketinator/types";
-
-type ChatMessageCommand = WSCommand<"message", { text: string }>;
-
-type ChatClientEntry = {
-  group: "chat";
-  command: ChatMessageCommand;
-};
-
-export type ClientReadableCommands = BaseWSCommands | ChatClientEntry;
-export type ClientWritableCommands = ChatClientEntry;
-
-type ChatRelayEntry = WSCommandEntryWithUserId<string> & {
-  group: "chat";
-  command: ChatMessageCommand;
-};
-
-export type RelayCommands = ChatRelayEntry;
-```
-
-### Browser client usage
-```ts
-import { SocketinatorClient } from "@socketinator/client-sdk";
-import type {
-  ClientReadableCommands,
-  ClientWritableCommands,
-} from "./commands";
-
-const client = new SocketinatorClient<
-  ClientReadableCommands,
-  ClientWritableCommands
->({
-  url: "wss://your-relay.example.com/ws",
-});
-
-client.on("chat", "message", ({ text }) => {
-  console.log("Message received:", text);
-});
-
-client.on("base", "connect", () => {
-  client.send("chat", "message", { text: "Hello from the browser!" });
-});
-```
-
-### Backend broadcaster (server SDK)
-```ts
-import { Socketinator } from "@socketinator/server-sdk";
-import type { RelayCommands } from "./commands";
-
-type UserId = string;
-
-const relay = new Socketinator<UserId, RelayCommands, RelayCommands>({
-  url: "wss://your-relay.example.com/ws/server",
-});
-
-relay.send("chat", "message", "user-123", { text: "Welcome aboard!" });
-
-relay.on("chat", "message", (payload, userId) => {
-  console.log(`Client ${userId} said: ${payload.text}`);
-});
-
-relay.setSession({
-  token: "session-token",
-  userId: "user-123",
-  exp: Date.now() + 1000 * 60 * 60,
-});
-```
-
 ### Run the WebSocket relay
 ```bash
 bunx --bun @socketinator/server
-```
-
-### Type utilities
-```ts
-import type { CommandsOf, CommandPayloadOf } from "@socketinator/types";
-import type { ClientReadableCommands } from "./commands";
-
-type ChatKeys = CommandsOf<ClientReadableCommands, "chat">["key"];
-type ChatPayload = CommandPayloadOf<
-  ClientReadableCommands,
-  "chat",
-  "message"
->;
 ```
 
 ## Packages
