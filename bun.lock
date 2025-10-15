@@ -10,10 +10,11 @@
         "typescript": "^5",
       },
     },
-    "packages/client": {
-      "name": "@socketinator/client",
+    "packages/client-sdk": {
+      "name": "@socketinator/client-sdk",
       "version": "1.0.0",
       "dependencies": {
+        "@socketinator/schemas": "workspace:*",
         "@socketinator/types": "workspace:*",
       },
       "devDependencies": {
@@ -49,6 +50,7 @@
       "name": "@socketinator/server-sdk",
       "version": "1.0.0",
       "dependencies": {
+        "@socketinator/schemas": "workspace:*",
         "@socketinator/types": "workspace:*",
       },
       "devDependencies": {
@@ -70,7 +72,7 @@
 
     "@sinclair/typebox": ["@sinclair/typebox@0.34.41", "", {}, "sha512-6gS8pZzSXdyRHTIqoqSVknxolr1kzfy4/CeDnrzsVz8TTIWUbOBr6gnzOmTYJ3eXQNh4IYHIGi5aIL7sOZ2G/g=="],
 
-    "@socketinator/client": ["@socketinator/client@workspace:packages/client"],
+    "@socketinator/client-sdk": ["@socketinator/client-sdk@workspace:packages/client-sdk"],
 
     "@socketinator/schemas": ["@socketinator/schemas@workspace:packages/schemas"],
 

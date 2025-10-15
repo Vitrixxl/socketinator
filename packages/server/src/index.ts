@@ -1,12 +1,12 @@
 import type {
-  WSServerMessageEntry,
-  WsServerMessageEntry,
-  WsServerSessionMessage,
+  WsClientAction,
+  WsServerActionMessage,
+  WsServerSessionEvent,
 } from "@socketinator/types";
 
 import {
   wsServerMessageSchema,
-  wsClientMessageSchema,
+  wsClientActionSchema,
 } from "@socketinator/schemas";
 import { env } from "bun";
 import { Cookie, Elysia } from "elysia";
@@ -21,33 +21,26 @@ const SECRET = env.SECRET;
 const port = env.PORT;
 const sessionCookieName = env.SESSION_COOKIE_NAME ?? "session_token";
 
-const isExpired = (exp: number): boolean => {
-  return Date.now() > exp;
-};
+const isExpired = (exp: number): boolean => Date.now() > exp;
 
-const toClientMessageEntry = (
-  data: WsServerMessageEntry,
-): WSServerMessageEntry => {
-  return {
-    group: data.group,
-    message: data.message,
-  };
-};
+const toClientAction = (data: WsServerActionMessage): WsClientAction => ({
+  group: data.group,
+  action: data.action,
+});
 
-const handleSessionMessage = (data: WsServerSessionMessage["payload"]) => {
+const handleSessionEvent = (data: WsServerSessionEvent["payload"]) => {
   switch (data.key) {
     case "set": {
       data.exp;
       break;
     }
-    case "delete":
-      {
-        expSessionMap.delete(data.token);
-        const sockets = userWsMap.get(data.userId);
-        if (!sockets || sockets.length == 0) return;
-        sockets.filter(({ sessionToken }) => sessionToken != data.token);
-      }
+    case "delete": {
+      expSessionMap.delete(data.token);
+      const sockets = userWsMap.get(data.userId);
+      if (!sockets || sockets.length === 0) return;
+      sockets.filter(({ sessionToken }) => sessionToken !== data.token);
       break;
+    }
   }
 };
 
@@ -71,12 +64,13 @@ const app = new Elysia()
       const userId = ws.data.userId;
       const sessionToken = ws.data.sessionToken;
       if (!userId || !sessionToken) return;
-      const clients = userWsMap.get(userId);
 
+      const clients = userWsMap.get(userId);
       if (!clients) {
         userWsMap.set(userId, [{ ws, sessionToken }]);
         return;
       }
+
       clients.push({ ws, sessionToken });
     },
 
@@ -86,18 +80,27 @@ const app = new Elysia()
       ] as Cookie<string>;
       expSessionMap.delete(sessionTokenCookie.value);
     },
+
     message: (ws, data) => {
       const userId = ws.data.userId;
       if (!userId || !serverWs) return;
-      serverWs.send({ ...data, userId });
+
+      serverWs.send({
+        group: data.group,
+        userId,
+        action: data.action,
+      });
     },
-    body: wsClientMessageSchema,
+
+    body: wsClientActionSchema,
+
     beforeHandle: ({ cookie, status }) => {
       const sessionToken = cookie[sessionCookieName] as Cookie<string>;
       const expSession = expSessionMap.get(sessionToken.value);
       if (!sessionToken || !expSession) {
         return status(401);
       }
+
       const { exp } = expSession;
       if (isExpired(exp)) {
         return status(401);
@@ -108,7 +111,8 @@ const app = new Elysia()
     open: (ws) => {
       serverWs = ws;
     },
-    close: (_) => {
+
+    close: () => {
       serverWs = null;
     },
 
@@ -116,22 +120,26 @@ const app = new Elysia()
       switch (data.action) {
         case "data": {
           const clients = userWsMap.get(data.payload.userId);
-          if (!clients || clients.length == 0) break;
-          const clientMessage = toClientMessageEntry(data.payload);
+          if (!clients || clients.length === 0) break;
+
+          const clientAction = toClientAction(data.payload);
           for (const { ws } of clients) {
-            ws.send(clientMessage);
+            ws.send(clientAction);
           }
           break;
         }
         case "session": {
-          handleSessionMessage(data.payload);
+          handleSessionEvent(data.payload);
+          break;
         }
       }
     },
+
     body: wsServerMessageSchema,
+
     beforeHandle: ({ headers, status }) => {
       const secret = headers["x-api-key"];
-      if (!secret || secret != SECRET) {
+      if (!secret || secret !== SECRET) {
         return status(401);
       }
     },

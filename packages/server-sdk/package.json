@@ -41,7 +41,8 @@
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
-    "@socketinator/types": "workspace:*"
+    "@socketinator/types": "workspace:*",
+    "@socketinator/schemas": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

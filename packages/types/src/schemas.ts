@@ -1,13 +1,10 @@
-import type {
-  wsClientMessageSchema,
-  wsServerMessageEntrySchema,
-  wsServerSessionMessageSchema,
-} from "@socketinator/schemas";
 import { z } from "zod";
+import type {
+  wsClientActionSchema,
+  wsServerActionSchema,
+  wsServerSessionEventSchema,
+} from "@socketinator/schemas";
 
-export type WsServerMessageEntry = z.infer<typeof wsServerMessageEntrySchema>;
-export type WsServerSessionMessage = z.infer<
-  typeof wsServerSessionMessageSchema
->;
-
-export type WsClientMessage = z.infer<typeof wsClientMessageSchema>;
+export type WsServerActionMessage = z.infer<typeof wsServerActionSchema>;
+export type WsServerSessionEvent = z.infer<typeof wsServerSessionEventSchema>;
+export type WsClientAction = z.infer<typeof wsClientActionSchema>;
