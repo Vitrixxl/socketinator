@@ -9,7 +9,7 @@
     "composite": false,
     "noEmit": false,
     "lib": ["ESNext"],
-    "types": ["bun-types"]
+    "types": ["@types/bun"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]

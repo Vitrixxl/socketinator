@@ -1,4 +1,4 @@
-import { wsClientCommandSchema } from "@socketinator/schemas";
+import { wsClientCommandEnvelopeSchema } from "@socketinator/schemas";
 import type {
   CommandsOf,
   GroupHandlers,
@@ -44,7 +44,7 @@ export class SocketinatorClient<
 
   private parseIncoming(raw: unknown): ReadEntries {
     const candidate = typeof raw === "string" ? JSON.parse(raw) : raw;
-    const result = wsClientCommandSchema.safeParse(candidate);
+    const result = wsClientCommandEnvelopeSchema.safeParse(candidate);
 
     if (!result.success) {
       throw new Error(`Invalid WS payload: ${result.error.message}`);

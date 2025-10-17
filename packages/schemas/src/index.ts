@@ -6,7 +6,7 @@ export const wsCommandSchema = z.object({
 });
 
 // SERVER SCHEMAS
-export const wsServerCommandPayloadSchema = z.object({
+export const wsServerCommandEnvelopeSchema = z.object({
   group: z.string(),
   userId: z.string().or(z.number()),
   command: wsCommandSchema,
@@ -14,7 +14,7 @@ export const wsServerCommandPayloadSchema = z.object({
 
 export const wsServerDataEventSchema = z.object({
   type: z.literal("data"),
-  payload: wsServerCommandPayloadSchema,
+  payload: wsServerCommandEnvelopeSchema,
 });
 
 export const wsSetSessionSchema = z.object({
@@ -41,7 +41,7 @@ export const wsServerMessageSchema = z.union([
 ]);
 
 // CLIENT SCHEMA
-export const wsClientCommandSchema = z.object({
+export const wsClientCommandEnvelopeSchema = z.object({
   group: z.string(),
   command: wsCommandSchema,
 });

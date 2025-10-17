@@ -1,12 +1,12 @@
 import type {
-  WsClientCommand,
-  WsServerCommandPayload,
+  WsClientCommandEnvelope,
+  WsServerCommandEnvelope,
   WsServerSessionEvent,
 } from "@socketinator/types";
 
 import {
   wsServerMessageSchema,
-  wsClientCommandSchema,
+  wsClientCommandEnvelopeSchema,
 } from "@socketinator/schemas";
 import { env } from "bun";
 import { Cookie, Elysia } from "elysia";
@@ -26,7 +26,9 @@ const sessionCookieName = env.SESSION_COOKIE_NAME ?? "session_token";
 
 const isExpired = (exp: number): boolean => Date.now() > exp;
 
-const toClientCommand = (data: WsServerCommandPayload): WsClientCommand => ({
+const toClientCommand = (
+  data: WsServerCommandEnvelope,
+): WsClientCommandEnvelope => ({
   group: data.group,
   command: data.command,
 });
@@ -95,7 +97,7 @@ const app = new Elysia()
       });
     },
 
-    body: wsClientCommandSchema,
+    body: wsClientCommandEnvelopeSchema,
 
     beforeHandle: ({ cookie, status }) => {
       const sessionToken = cookie[sessionCookieName] as Cookie<string>;

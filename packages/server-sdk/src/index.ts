@@ -1,7 +1,6 @@
-import { wsServerCommandPayloadSchema } from "@socketinator/schemas";
+import { wsServerCommandEnvelopeSchema } from "@socketinator/schemas";
+import { z } from "zod";
 import type {
-  CommandsOf,
-  HandlerStoreWithUserId,
   CommandPayloadOf,
   SocketinatorServerParams,
   WSCommandEntryWithUserId,
@@ -9,25 +8,29 @@ import type {
   WsSetSession,
   WsDeleteSession,
   WsServerDataEvent,
+  SocketinatorReadEntriesConfig,
+  ReadPayload,
+  ReadGroups,
+  ReadKeys,
+  CallbackStore,
+  ParsedIncomingMessage,
+  ParsedIncomingMessageAny,
+  WithUserId,
+  CommandsOf,
 } from "@socketinator/types";
-
-type GroupHandlersWithUserId<
-  Entries extends WSCommandEntryWithUserId<UserId>,
-  Group extends Entries["group"],
-  UserId extends string | number,
-> = NonNullable<HandlerStoreWithUserId<Entries, UserId>[Group]>;
 
 export class Socketinator<
   UserId extends string | number,
   ServerEntries extends WSCommandEntryWithUserId<UserId>,
-  ClientEntries extends WSCommandEntryWithUserId<UserId>,
+  const C extends SocketinatorReadEntriesConfig,
 > {
-  private readonly handlerStore: HandlerStoreWithUserId<ClientEntries, UserId> =
-    {};
+  private readonly handlerStore: CallbackStore<C, UserId> = {};
   private ws: WebSocket | null = null;
   private onConnect: ((e: Event) => void) | null = null;
   private onClose: ((e: CloseEvent) => void) | null = null;
-  constructor({ url }: SocketinatorServerParams) {
+  private readEnvelopes: C;
+  constructor({ url, readEnvelopes }: SocketinatorServerParams<C>) {
+    this.readEnvelopes = readEnvelopes;
     this.ws = new WebSocket(url);
 
     this.ws.onmessage = (event) => {
@@ -50,41 +53,73 @@ export class Socketinator<
     const parsed = this.parseIncoming(raw);
     this.dispatch(parsed);
   }
+  private hasOwn = <O extends object, K extends PropertyKey>(
+    obj: O,
+    key: K,
+  ): key is Extract<K, keyof O> =>
+    Object.prototype.hasOwnProperty.call(obj, key);
 
-  private parseIncoming = (raw: unknown): ClientEntries => {
+  private parseIncoming = (
+    raw: unknown,
+  ): ParsedIncomingMessageAny<UserId, C> | null => {
     const candidate = typeof raw === "string" ? JSON.parse(raw) : raw;
-    const result = wsServerCommandPayloadSchema.safeParse(candidate);
 
-    if (!result.success) {
-      throw new Error(`Invalid WS payload: ${result.error.message}`);
+    const parsedEnvelope = wsServerCommandEnvelopeSchema.safeParse(candidate);
+    if (!parsedEnvelope.success) {
+      throw new Error(`Invalid WS payload: ${parsedEnvelope.error.message}`);
     }
 
-    const { group, command, userId } = result.data;
+    const { group, userId, command } = parsedEnvelope.data;
 
-    return {
-      group,
+    if (!this.hasOwn(this.readEnvelopes, group)) return null;
+    const groupEntry = this.readEnvelopes[group];
+    if (!groupEntry) return null;
+
+    if (!this.hasOwn(groupEntry, command.key)) return null;
+    const entry = groupEntry[command.key];
+    if (!entry) return null;
+
+    type G = Extract<typeof group, ReadGroups<C>>;
+    type K = Extract<typeof command.key, ReadKeys<C, G>>;
+
+    type Payload = WithUserId<ReadPayload<C, G, K>, UserId>;
+    const schema = entry.schema;
+
+    const parsePayloadResult = schema.safeParse(command.payload);
+    if (!parsePayloadResult.success) return null;
+
+    const parsedPayload =
+      parsePayloadResult.data || ({} as ReadPayload<C, G, K>);
+
+    const payloadWithUser = {
+      ...parsedPayload,
       userId,
-      command,
-    } as ClientEntries;
+    } as WithUserId<ReadPayload<C, G, K>, UserId>;
+
+    const result: ParsedIncomingMessage<UserId, C, G, K, Payload> = {
+      group: group as G,
+      key: command.key as K,
+      payload: payloadWithUser,
+    };
+
+    return result;
   };
 
-  private dispatch = <Entry extends ClientEntries>(message: Entry) => {
-    type Group = Entry["group"];
-    type Key = Entry["command"]["key"];
+  private dispatch = (msg: ParsedIncomingMessageAny<UserId, C> | null) => {
+    if (!msg) return;
 
-    const groupHandlers = this.handlerStore[message.group as Group] as
-      | GroupHandlersWithUserId<ClientEntries, Group, UserId>
-      | undefined;
+    const { group, key, payload } = msg;
 
+    if (!this.hasOwn(this.handlerStore, group)) return;
+    const groupHandlers = this.handlerStore[group];
     if (!groupHandlers) return;
 
-    const callbacks = groupHandlers[message.command.key as Key];
-    callbacks?.forEach((callback) =>
-      callback(
-        message.command.payload as CommandPayloadOf<ClientEntries, Group, Key>,
-        message.userId,
-      ),
-    );
+    if (!this.hasOwn(groupHandlers, key)) return;
+    const callbacks = groupHandlers[key];
+
+    if (!callbacks?.size) return;
+
+    for (const cb of callbacks) cb(payload as any);
   };
 
   private safeSend = (data: WsServerSessionEvent | WsServerDataEvent) => {
@@ -96,12 +131,17 @@ export class Socketinator<
   send = <
     Group extends ServerEntries["group"],
     Key extends CommandsOf<ServerEntries, Group>["key"],
-  >(
-    group: Group,
-    key: Key,
-    userId: UserId,
-    payload: CommandPayloadOf<ServerEntries, Group, Key>,
-  ) => {
+  >({
+    group,
+    key,
+    userId,
+    payload,
+  }: {
+    group: Group;
+    key: Key;
+    userId: UserId;
+    payload: CommandPayloadOf<ServerEntries, Group, Key>;
+  }) => {
     this.safeSend({
       type: "data",
       payload: {
@@ -115,26 +155,18 @@ export class Socketinator<
     });
   };
 
-  on = <
-    Group extends ClientEntries["group"],
-    Key extends CommandsOf<ClientEntries, Group>["key"],
-  >(
-    group: Group,
-    key: Key,
-    callback: (
-      data: CommandPayloadOf<ClientEntries, Group, Key>,
-      userId: UserId,
-    ) => void,
+  on = <G extends ReadGroups<C>, K extends ReadKeys<C, G>>(
+    group: G,
+    key: K,
+    callback: (data: WithUserId<ReadPayload<C, G, K>, UserId>) => void,
   ) => {
-    const groupHandlers = (this.handlerStore[group] ??=
-      {} as GroupHandlersWithUserId<ClientEntries, Group, UserId>);
+    // initialise le sous-store de group si absent
+    const groupHandlers = (this.handlerStore[group] ??= {} as NonNullable<
+      CallbackStore<C, UserId>[G]
+    >);
 
-    const callbacks = (groupHandlers[key] ??= new Set<
-      (
-        data: CommandPayloadOf<ClientEntries, Group, Key>,
-        userId: UserId,
-      ) => void
-    >());
+    // initialise le Set pour la key si absent
+    const callbacks = (groupHandlers[key] ??= new Set<typeof callback>());
 
     callbacks.add(callback);
     return () => callbacks.delete(callback);
@@ -159,3 +191,18 @@ export class Socketinator<
     } satisfies WsServerSessionEvent);
   };
 }
+
+export const a = new Socketinator({
+  url: "ws://localhost:6969",
+  readEnvelopes: {
+    chess: {
+      move: {
+        schema: z.object({
+          move: z.string(),
+        }),
+      },
+    },
+  },
+});
+
+a.on("chess", "move", ({ userId, move }) => {});
