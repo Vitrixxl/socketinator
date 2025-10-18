@@ -16,6 +16,7 @@ import type {
   ParsedIncomingMessageAny,
   WithUserId,
   CommandsOf,
+  WsServerInitEvent,
 } from "@socketinator/types";
 
 export class Socketinator<
@@ -36,7 +37,7 @@ export class Socketinator<
       this.handleRawMessage(event.data);
     };
     this.ws.onopen = (e: Event) => {
-      this.transmitConfig();
+      this.transmitConfig(readEnvelopes);
       if (this.onConnect != null) {
         this.onConnect(e);
       }
@@ -49,7 +50,29 @@ export class Socketinator<
     };
   }
 
-  private transmitConfig = () => {};
+  private transformConfigToRoutes = (config: SocketinatorReadEntriesConfig) => {
+    const routes: Record<string, Record<string, number>> = {};
+
+    for (const [group, entries] of Object.entries(config)) {
+      routes[group] = {};
+      for (const [key, value] of Object.entries(entries)) {
+        routes[group][key] = value.maxRequestPerSecond ?? 10;
+      }
+    }
+
+    return routes;
+  };
+
+  private transmitConfig = (readEnvelopes: C) => {
+    const parsedConfig = this.transformConfigToRoutes(readEnvelopes);
+    this.safeSend({
+      type: "init",
+      payload: {
+        key: "init",
+        routes: parsedConfig,
+      },
+    } satisfies WsServerInitEvent);
+  };
 
   private handleRawMessage(raw: unknown) {
     const parsed = this.parseIncoming(raw);
@@ -124,7 +147,9 @@ export class Socketinator<
     for (const cb of callbacks) cb(payload as any);
   };
 
-  private safeSend = (data: WsServerSessionEvent | WsServerDataEvent) => {
+  private safeSend = (
+    data: WsServerSessionEvent | WsServerDataEvent | WsServerInitEvent,
+  ) => {
     if (this.ws) {
       this.ws.send(JSON.stringify(data));
     }

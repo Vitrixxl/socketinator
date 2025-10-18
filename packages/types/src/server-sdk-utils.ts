@@ -1,5 +1,4 @@
 import type z from "zod";
-() => {};
 import type { SocketinatorReadEntriesConfig } from ".";
 
 export type ReadEntryUnion<C extends SocketinatorReadEntriesConfig> = {

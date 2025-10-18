@@ -4,6 +4,7 @@ import type {
   wsDeleteSessionSchema,
   wsServerCommandEnvelopeSchema,
   wsServerDataEventSchema,
+  wsServerInitSchema,
   wsServerSessionEventSchema,
   wsSetSessionSchema,
 } from "@socketinator/schemas";
@@ -18,3 +19,6 @@ export type WsClientCommandEnvelope = z.infer<
 export type WsSetSession = z.infer<typeof wsSetSessionSchema>;
 export type WsDeleteSession = z.infer<typeof wsDeleteSessionSchema>;
 export type WsServerDataEvent = z.infer<typeof wsServerDataEventSchema>;
+
+export type WsServerInit = z.infer<typeof wsServerInitSchema>;
+export type WsServerInitEvent = z.infer<typeof wsServerInitEventSchema>;

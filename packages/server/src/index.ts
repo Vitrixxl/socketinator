@@ -1,6 +1,8 @@
 import type {
+  RateConfig,
   WsClientCommandEnvelope,
   WsServerCommandEnvelope,
+  WsServerInit,
   WsServerSessionEvent,
 } from "@socketinator/types";
 
@@ -26,6 +28,9 @@ const sessionCookieName = env.SESSION_COOKIE_NAME ?? "session_token";
 
 const isExpired = (exp: number): boolean => Date.now() > exp;
 
+let rateConfig: RateConfig = {};
+const requestCountMap = new Map<string, number>();
+
 const toClientCommand = (
   data: WsServerCommandEnvelope,
 ): WsClientCommandEnvelope => ({
@@ -49,7 +54,13 @@ const handleSessionEvent = (data: WsServerSessionEvent["payload"]) => {
   }
 };
 
+const handleInit = (data: WsServerInit) => {
+  rateConfig = data.routes;
+};
+
 let serverWs: ElysiaWS | null = null;
+
+setInterval(requestCountMap.clear, 1000);
 
 const app = new Elysia()
   .derive(({ cookie }) => {
@@ -60,8 +71,8 @@ const app = new Elysia()
       : undefined;
 
     return {
-      sessionToken, // string | null
-      userId: expSession?.userId ?? null, // string | null
+      sessionToken,
+      userId: expSession?.userId ?? null,
     };
   })
   .ws("/ws", {
@@ -89,6 +100,13 @@ const app = new Elysia()
     message: (ws, data) => {
       const userId = ws.data.userId;
       if (!userId || !serverWs) return;
+
+      const requestCountKey = `${data.group}${data.command.key}${userId}`;
+      const currentRequestCount = requestCountMap.get(requestCountKey);
+      if (!currentRequestCount) requestCountMap.set(requestCountKey, 0);
+      else if (currentRequestCount > rateConfig[data.group][data.command.key]) {
+        ws.close();
+      }
 
       serverWs.send({
         group: data.group,
@@ -136,6 +154,9 @@ const app = new Elysia()
         case "session": {
           handleSessionEvent(data.payload);
           break;
+        }
+        case "init": {
+          handleInit(data.payload);
         }
       }
     },

@@ -1,8 +1,9 @@
 export * from "./schemas";
+export * from "./server-sdk";
+export * from "./client-sdk";
+export * from "./server-sdk-utils";
+export * from "./client-sdk-utils";
 export * from "./server";
-export * from "./client";
-export * from "./server-utils";
-export * from "./client-utils";
 
 export type WSCommand<K extends PropertyKey = string, P = unknown> = {
   key: K;
