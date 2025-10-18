@@ -1,5 +1,4 @@
 import { wsServerCommandEnvelopeSchema } from "@socketinator/schemas";
-import { z } from "zod";
 import type {
   CommandPayloadOf,
   SocketinatorServerParams,
@@ -12,7 +11,7 @@ import type {
   ReadPayload,
   ReadGroups,
   ReadKeys,
-  CallbackStore,
+  CallbackStoreWithUserId,
   ParsedIncomingMessage,
   ParsedIncomingMessageAny,
   WithUserId,
@@ -21,10 +20,10 @@ import type {
 
 export class Socketinator<
   UserId extends string | number,
-  ServerEntries extends WSCommandEntryWithUserId<UserId>,
+  WriteEntries extends WSCommandEntryWithUserId<UserId>,
   const C extends SocketinatorReadEntriesConfig,
 > {
-  private readonly handlerStore: CallbackStore<C, UserId> = {};
+  private readonly handlerStore: CallbackStoreWithUserId<C, UserId> = {};
   private ws: WebSocket | null = null;
   private onConnect: ((e: Event) => void) | null = null;
   private onClose: ((e: CloseEvent) => void) | null = null;
@@ -37,17 +36,20 @@ export class Socketinator<
       this.handleRawMessage(event.data);
     };
     this.ws.onopen = (e: Event) => {
+      this.transmitConfig();
       if (this.onConnect != null) {
         this.onConnect(e);
       }
     };
     this.ws.onclose = (e: CloseEvent) => {
+      this.ws = null;
       if (this.onClose != null) {
         this.onClose(e);
-        this.ws = null;
       }
     };
   }
+
+  private transmitConfig = () => {};
 
   private handleRawMessage(raw: unknown) {
     const parsed = this.parseIncoming(raw);
@@ -129,8 +131,8 @@ export class Socketinator<
   };
 
   send = <
-    Group extends ServerEntries["group"],
-    Key extends CommandsOf<ServerEntries, Group>["key"],
+    Group extends WriteEntries["group"],
+    Key extends CommandsOf<WriteEntries, Group>["key"],
   >({
     group,
     key,
@@ -140,7 +142,7 @@ export class Socketinator<
     group: Group;
     key: Key;
     userId: UserId;
-    payload: CommandPayloadOf<ServerEntries, Group, Key>;
+    payload: CommandPayloadOf<WriteEntries, Group, Key>;
   }) => {
     this.safeSend({
       type: "data",
@@ -160,12 +162,9 @@ export class Socketinator<
     key: K,
     callback: (data: WithUserId<ReadPayload<C, G, K>, UserId>) => void,
   ) => {
-    // initialise le sous-store de group si absent
     const groupHandlers = (this.handlerStore[group] ??= {} as NonNullable<
-      CallbackStore<C, UserId>[G]
+      CallbackStoreWithUserId<C, UserId>[G]
     >);
-
-    // initialise le Set pour la key si absent
     const callbacks = (groupHandlers[key] ??= new Set<typeof callback>());
 
     callbacks.add(callback);
@@ -191,18 +190,3 @@ export class Socketinator<
     } satisfies WsServerSessionEvent);
   };
 }
-
-export const a = new Socketinator({
-  url: "ws://localhost:6969",
-  readEnvelopes: {
-    chess: {
-      move: {
-        schema: z.object({
-          move: z.string(),
-        }),
-      },
-    },
-  },
-});
-
-a.on("chess", "move", ({ userId, move }) => {});

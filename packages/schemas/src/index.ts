@@ -35,9 +35,27 @@ export const wsServerSessionEventSchema = z.object({
   payload: z.union([wsSetSessionSchema, wsDeleteSessionSchema]),
 });
 
+export const wsServerInitEventSchema = z.object({
+  type: z.literal("init"),
+  payload: z.object({
+    allowedRoutes: z.array(
+      z.object({
+        group: z.string(),
+        details: z.array(
+          z.object({
+            key: z.string(),
+            maxRequestPerSecond: z.number(),
+          }),
+        ),
+      }),
+    ),
+  }),
+});
+
 export const wsServerMessageSchema = z.union([
   wsServerDataEventSchema,
   wsServerSessionEventSchema,
+  wsServerInitEventSchema,
 ]);
 
 // CLIENT SCHEMA
