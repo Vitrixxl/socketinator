@@ -1,3 +1,6 @@
+import z from "zod";
+import { Socketinator } from "../../server-sdk/src";
+
 export * from "./schemas";
 export * from "./server-sdk";
 export * from "./client-sdk";
@@ -39,3 +42,39 @@ export type HandlerStore<Entries extends WSCommandEntry> = {
     >;
   };
 };
+
+export const a = new Socketinator({
+  url: "",
+  readEnvelopes: {
+    chess: {
+      move: {
+        schema: z.object({
+          move: z.string(),
+          gameId: z.string(),
+        }),
+      },
+      resign: {
+        schema: z.object({
+          gameId: z.string(),
+        }),
+      },
+      "draw-offer": {
+        schema: z.object({
+          gameId: z.string(),
+        }),
+      },
+      "draw-response": {
+        schema: z.object({
+          response: z.boolean(),
+          gameId: z.string(),
+        }),
+      },
+      message: {
+        schema: z.object({
+          content: z.string(),
+          gameId: z.string(),
+        }),
+      },
+    },
+  },
+});

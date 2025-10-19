@@ -22,7 +22,7 @@ import type {
 export class Socketinator<
   UserId extends string | number,
   WriteEntries extends WSCommandEntryWithUserId<UserId>,
-  const C extends SocketinatorReadEntriesConfig = SocketinatorReadEntriesConfig,
+  C extends SocketinatorReadEntriesConfig = SocketinatorReadEntriesConfig,
 > {
   private readonly handlerStore: CallbackStoreWithUserId<C, UserId> = {};
   private ws: WebSocket | null = null;
