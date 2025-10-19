@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/bun/client",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "composite": false,
+    "noEmit": false,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["@types/bun"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler"
+  },
+  "include": ["client/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}

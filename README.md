@@ -19,10 +19,10 @@ Socketinator is a Bun-powered WebSocket toolkit that pairs an Elysia-based relay
 
 ### Install
 ```bash
-npm install @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/types @socketinator/schemas
+npm install @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/contracts
 ```
 ```bash
-bun add @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/types @socketinator/schemas
+bun add @socketinator/client-sdk @socketinator/server-sdk @socketinator/server @socketinator/contracts
 ```
 
 ### Run the WebSocket relay
@@ -34,8 +34,7 @@ bunx --bun @socketinator/server
 - `@socketinator/server`: Bun CLI for running the WebSocket relay (launch with `bunx --bun @socketinator/server`).
 - `@socketinator/client-sdk`: Browser-friendly client that queues handlers, parses commands, and serialises payloads.
 - `@socketinator/server-sdk`: Helper layer for backend services that need to push commands to connected users.
-- `@socketinator/types`: Shared Zod schemas and TypeScript utilities underpinning the command model.
-- `@socketinator/schemas`: Zod schemas for validating the transmitted data, ensuring only safe payloads.
+- `@socketinator/contracts`: Shared Zod schemas and TypeScript utilities underpinning the command model.
 
 ## Getting Started
 `bun install`

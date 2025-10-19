@@ -3,6 +3,9 @@
   "workspaces": {
     "": {
       "name": "socketinator",
+      "dependencies": {
+        "zod": "^4.1.12",
+      },
       "devDependencies": {
         "@types/bun": "latest",
       },
@@ -12,59 +15,51 @@
     },
     "packages/client-sdk": {
       "name": "@socketinator/client-sdk",
-      "version": "1.0.3",
+      "version": "1.0.5",
       "dependencies": {
-        "@socketinator/schemas": "workspace:1.0.2",
+        "@socketinator/contracts": "workspace:*",
       },
       "devDependencies": {
-        "@socketinator/types": "workspace:1.0.2",
         "@types/bun": "latest",
         "typescript": "^5",
       },
     },
-    "packages/schemas": {
-      "name": "@socketinator/schemas",
-      "version": "1.0.2",
+    "packages/contracts": {
+      "name": "@socketinator/contracts",
+      "version": "0.0.1",
       "dependencies": {
         "zod": "^4.1.12",
+      },
+      "devDependencies": {
+        "typescript": "^5",
       },
     },
     "packages/server": {
       "name": "@socketinator/server",
-      "version": "1.0.3",
+      "version": "1.0.6",
       "bin": {
         "server": "dist/index.js",
       },
       "dependencies": {
-        "@socketinator/schemas": "workspace:1.0.2",
+        "@socketinator/contracts": "workspace:*",
         "elysia": "latest",
         "zod": "^4.1.12",
       },
       "devDependencies": {
-        "@socketinator/types": "workspace:1.0.2",
         "@types/bun": "latest",
         "bun-types": "latest",
       },
     },
     "packages/server-sdk": {
       "name": "@socketinator/server-sdk",
-      "version": "1.0.3",
+      "version": "1.0.6",
       "dependencies": {
-        "@socketinator/schemas": "workspace:1.0.2",
+        "@socketinator/contracts": "workspace:*",
         "zod": "^4.1.12",
       },
       "devDependencies": {
-        "@socketinator/types": "workspace:1.0.2",
         "@types/bun": "latest",
         "typescript": "^5",
-      },
-    },
-    "packages/types": {
-      "name": "@socketinator/types",
-      "version": "1.0.2",
-      "dependencies": {
-        "@socketinator/schemas": "workspace:1.0.2",
-        "zod": "^4.1.12",
       },
     },
   },
@@ -75,13 +70,11 @@
 
     "@socketinator/client-sdk": ["@socketinator/client-sdk@workspace:packages/client-sdk"],
 
-    "@socketinator/schemas": ["@socketinator/schemas@workspace:packages/schemas"],
+    "@socketinator/contracts": ["@socketinator/contracts@workspace:packages/contracts"],
 
     "@socketinator/server": ["@socketinator/server@workspace:packages/server"],
 
     "@socketinator/server-sdk": ["@socketinator/server-sdk@workspace:packages/server-sdk"],
-
-    "@socketinator/types": ["@socketinator/types@workspace:packages/types"],
 
     "@tokenizer/inflate": ["@tokenizer/inflate@0.2.7", "", { "dependencies": { "debug": "^4.4.0", "fflate": "^0.8.2", "token-types": "^6.0.0" } }, "sha512-MADQgmZT1eKjp06jpI2yozxaU9uVs4GzzgSL+uEq7bVcJ9V1ZXQkeGNql1fsSI0gMy1vhvNTNbUqrx+pZfJVmg=="],
 

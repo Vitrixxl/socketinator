@@ -1,15 +1,14 @@
+import {
+  wsServerMessageSchema,
+  wsClientCommandEnvelopeSchema,
+} from "@app-types";
 import type {
   RateConfig,
   WsClientCommandEnvelope,
   WsServerCommandEnvelope,
   WsServerInit,
   WsServerSessionEvent,
-} from "@socketinator/types";
-
-import {
-  wsServerMessageSchema,
-  wsClientCommandEnvelopeSchema,
-} from "@socketinator/schemas";
+} from "@app-types";
 import { env } from "bun";
 import { Cookie, Elysia } from "elysia";
 import { ElysiaWS } from "elysia/dist/ws";
@@ -108,9 +107,20 @@ const app = new Elysia()
       if (!userId || !serverWs) return;
 
       const requestCountKey = `${data.group}${data.command.key}${userId}`;
-      const currentRequestCount = requestCountMap.get(requestCountKey);
-      if (!currentRequestCount) requestCountMap.set(requestCountKey, 0);
-      else if (currentRequestCount > rateConfig[data.group][data.command.key]) {
+
+      let currentRequestCount = requestCountMap.get(requestCountKey);
+      if (currentRequestCount === undefined) {
+        currentRequestCount = 0;
+        requestCountMap.set(requestCountKey, currentRequestCount);
+      }
+
+      const groupConfig = rateConfig[data.group];
+      if (!groupConfig) {
+        ws.close();
+        return;
+      }
+      const limit = groupConfig[data.command.key];
+      if (!limit || currentRequestCount > limit) {
         ws.close();
       }
 
