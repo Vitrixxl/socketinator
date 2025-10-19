@@ -1,6 +1,6 @@
 {
   "name": "@socketinator/client-sdk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "WebSocket client for Socketinator",
   "type": "module",
   "main": "./dist/index.js",

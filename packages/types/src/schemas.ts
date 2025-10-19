@@ -4,6 +4,7 @@ import type {
   wsDeleteSessionSchema,
   wsServerCommandEnvelopeSchema,
   wsServerDataEventSchema,
+  wsServerInitEventSchema,
   wsServerInitSchema,
   wsServerSessionEventSchema,
   wsSetSessionSchema,
