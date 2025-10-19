@@ -1,6 +1,6 @@
 {
   "name": "@socketinator/server",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Socketinator WebSocket server",
   "type": "module",
   "main": "./dist/index.js",

@@ -23,7 +23,13 @@ const userWsMap = new Map<
 >();
 
 const SECRET = env.SECRET;
-const port = env.PORT;
+if (!SECRET) {
+  console.error(
+    "You need to set a secret env variable named 'SECRET' in order to start the application",
+  );
+  process.exit(1);
+}
+const port = env.PORT ?? 6969;
 const sessionCookieName = env.SESSION_COOKIE_NAME ?? "session_token";
 
 const isExpired = (exp: number): boolean => Date.now() > exp;
@@ -60,7 +66,7 @@ const handleInit = (data: WsServerInit) => {
 
 let serverWs: ElysiaWS | null = null;
 
-setInterval(requestCountMap.clear, 1000);
+setInterval(() => requestCountMap.clear(), 1000);
 
 const app = new Elysia()
   .derive(({ cookie }) => {
