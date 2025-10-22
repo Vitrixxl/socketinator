@@ -6,6 +6,7 @@
   ],
   "type": "module",
   "scripts": {
+    "types:generates": "rm -rf ./packages/sdk/contracts && rm -rf ./packages/server/contracts && cp -r ./contracts ./packages/sdk && cp -r ./contracts ./packages/server ",
     "build": "bun run --filter '@socketinator/*' build"
   },
   "devDependencies": {

@@ -1,5 +1,4 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": ".",
@@ -7,8 +6,13 @@
     "declarationMap": true,
     "emitDeclarationOnly": true,
     "composite": false,
-    "noEmit": false
+    "noEmit": false,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "skipLibCheck": true
   },
-  "include": ["client/**/*", "server/**/*"],
+  "include": ["client/**/*", "server/**/*", "contracts/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

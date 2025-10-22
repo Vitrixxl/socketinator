@@ -1,14 +1,14 @@
 import {
   wsServerMessageSchema,
   wsClientCommandEnvelopeSchema,
-} from "@app-types";
+} from "../contracts";
 import type {
   RateConfig,
   WsClientCommandEnvelope,
   WsServerCommandEnvelope,
   WsServerInit,
   WsServerSessionEvent,
-} from "@app-types";
+} from "../contracts";
 import { env } from "bun";
 import { Cookie, Elysia } from "elysia";
 import { ElysiaWS } from "elysia/dist/ws";

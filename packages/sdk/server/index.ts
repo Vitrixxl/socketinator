@@ -1,4 +1,4 @@
-import { wsServerCommandEnvelopeSchema } from "@app-types";
+import { wsServerCommandEnvelopeSchema } from "../contracts";
 import type {
   CommandPayloadOf,
   SocketinatorServerParams,
@@ -18,7 +18,10 @@ import type {
   CommandsOf,
   WsServerInitEvent,
   WSCommand,
-} from "@app-types";
+} from "../contracts";
+
+// Re-export all types and schemas from contracts
+export * from "../contracts";
 
 export class Socketinator<
   WriteEntries extends WSCommandEntryWithUserId,
@@ -32,9 +35,16 @@ export class Socketinator<
   private onConnect: ((e: Event) => void) | null = null;
   private onClose: ((e: CloseEvent) => void) | null = null;
   private readEnvelopes: C;
-  constructor({ url, readEnvelopes }: SocketinatorServerParams<C>) {
+  constructor({
+    url,
+    readEnvelopes,
+    onConnect,
+    onClose,
+  }: SocketinatorServerParams<C>) {
     this.readEnvelopes = readEnvelopes;
     this.ws = new WebSocket(url);
+    this.onConnect = onConnect;
+    this.onClose = onClose;
 
     this.ws.onmessage = (event) => {
       this.handleRawMessage(event.data);

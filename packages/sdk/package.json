@@ -1,80 +1,30 @@
 {
   "name": "@socketinator/sdk",
-  "version": "1.0.6",
+  "version": "1.0.10",
   "description": "Client and server SDK for Socketinator",
   "type": "module",
-  "main": "./dist/browser/client/index.js",
-  "types": "./dist/browser/client/index.d.ts",
+  "main": "./dist/client/index.js",
+  "types": "./dist/client/client/index.d.ts",
   "exports": {
-    ".": {
-      "browser": {
-        "types": "./dist/browser/client/index.d.ts",
-        "import": "./dist/browser/client/index.js"
-      },
-      "bun": {
-        "types": "./dist/bun/server/index.d.ts",
-        "import": "./dist/bun/server/index.js"
-      },
-      "node": {
-        "types": "./dist/node/server/index.d.ts",
-        "import": "./dist/node/server/index.js"
-      },
-      "default": {
-        "types": "./dist/browser/client/index.d.ts",
-        "import": "./dist/browser/client/index.js"
-      }
-    },
     "./client": {
-      "browser": {
-        "types": "./dist/browser/client/index.d.ts",
-        "import": "./dist/browser/client/index.js"
-      },
-      "bun": {
-        "types": "./dist/bun/client/index.d.ts",
-        "import": "./dist/bun/client/index.js"
-      },
-      "node": {
-        "types": "./dist/node/client/index.d.ts",
-        "import": "./dist/node/client/index.js"
-      },
-      "default": {
-        "types": "./dist/browser/client/index.d.ts",
-        "import": "./dist/browser/client/index.js"
-      }
-    },
-    "./client/browser": {
-      "types": "./dist/browser/client/index.d.ts",
-      "import": "./dist/browser/client/index.js"
-    },
-    "./client/node": {
-      "types": "./dist/node/client/index.d.ts",
-      "import": "./dist/node/client/index.js"
-    },
-    "./client/bun": {
-      "types": "./dist/bun/client/index.d.ts",
-      "import": "./dist/bun/client/index.js"
+      "types": "./dist/client/client/index.d.ts",
+      "import": "./dist/client/index.js",
+      "default": "./dist/client/index.js"
     },
     "./server": {
-      "bun": {
-        "types": "./dist/bun/server/index.d.ts",
-        "import": "./dist/bun/server/index.js"
-      },
-      "node": {
-        "types": "./dist/node/server/index.d.ts",
-        "import": "./dist/node/server/index.js"
-      },
-      "default": {
-        "types": "./dist/node/server/index.d.ts",
-        "import": "./dist/node/server/index.js"
-      }
-    },
-    "./server/node": {
-      "types": "./dist/node/server/index.d.ts",
-      "import": "./dist/node/server/index.js"
-    },
-    "./server/bun": {
-      "types": "./dist/bun/server/index.d.ts",
-      "import": "./dist/bun/server/index.js"
+      "types": "./dist/server/server/index.d.ts",
+      "import": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "server": [
+        "dist/server/server/index.d.ts"
+      ],
+      "client": [
+        "dist/client/client/index.d.ts"
+      ]
     }
   },
   "files": [
@@ -83,20 +33,14 @@
   ],
   "scripts": {
     "build": "bun run build:server && bun run build:client && bun run build:types",
-    "build:server": "bun run build:server:node && bun run build:server:bun",
-    "build:server:node": "bun build server/index.ts --outdir dist/node/server --target node --format esm --minify",
-    "build:server:bun": "bun build server/index.ts --outdir dist/bun/server --target bun --format esm --minify",
-    "build:client": "bun run build:client:browser && bun run build:client:node && bun run build:client:bun",
-    "build:client:browser": "bun build client/index.ts --outdir dist/browser/client --target browser --format esm --minify",
-    "build:client:node": "bun build client/index.ts --outdir dist/node/client --target node --format esm --minify",
-    "build:client:bun": "bun build client/index.ts --outdir dist/bun/client --target bun --format esm --minify",
+    "build:server": "bun build server/index.ts --outdir dist/server --target bun --format esm --minify",
+    "build:client": "bun build client/index.ts --outdir dist/client --target browser --format esm --minify",
     "build:types": "bun run build:types:server && bun run build:types:client",
-    "build:types:server": "tsc --project tsconfig.build.node.json && tsc --project tsconfig.build.bun.json",
-    "build:types:client": "tsc --project tsconfig.build.client.browser.json && tsc --project tsconfig.build.client.node.json && tsc --project tsconfig.build.client.bun.json",
+    "build:types:server": "tsc --project tsconfig.build.server.json",
+    "build:types:client": "tsc --project tsconfig.build.client.json",
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
-    "@socketinator/contracts": "workspace:*",
     "zod": "^4.1.12"
   },
   "devDependencies": {

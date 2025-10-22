@@ -1,11 +1,14 @@
-import { wsClientCommandEnvelopeSchema } from "@app-types";
+import { wsClientCommandEnvelopeSchema } from "../contracts";
 import type {
   CommandsOf,
   CallbackStore,
   CommandPayloadOf,
   SocketinatorClientParams,
   WSCommandEntry,
-} from "@app-types";
+} from "../contracts";
+
+// Re-export all types and schemas from contracts
+export * from "../contracts";
 
 export class SocketinatorClient<
   WriteEntries extends WSCommandEntry,

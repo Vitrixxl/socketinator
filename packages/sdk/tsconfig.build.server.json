@@ -1,17 +1,22 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist/bun/server",
+    "outDir": "./dist/server",
     "declaration": true,
     "declarationMap": true,
     "emitDeclarationOnly": true,
     "composite": false,
     "noEmit": false,
-    "lib": ["ESNext", "DOM"],
+    "lib": ["ESNext"],
     "types": ["@types/bun"],
     "skipLibCheck": true,
-    "moduleResolution": "bundler"
+    "module": "ESNext",
+    "target": "ES2020",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "*": ["*"]
+    }
   },
-  "include": ["server/**/*"],
+  "include": ["server/**/*", "contracts/**/*", "contracts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
