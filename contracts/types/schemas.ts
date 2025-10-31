@@ -6,8 +6,10 @@ import type {
   wsServerDataEventSchema,
   wsServerInitEventSchema,
   wsServerInitSchema,
+  wsServerResponseEnvelopeSchema,
   wsServerResponseSchema,
   wsServerSessionEventSchema,
+  wsServerToClientEnvelopeSchema,
   wsSetSessionSchema,
 } from "../schema";
 
@@ -15,10 +17,18 @@ export type WsServerCommandEnvelope = z.infer<
   typeof wsServerCommandEnvelopeSchema
 >;
 
+export type WsServerResponseEnvelope = z.infer<
+  typeof wsServerResponseEnvelopeSchema
+>;
+
 export type WsServerSessionEvent = z.infer<typeof wsServerSessionEventSchema>;
 
 export type WsClientCommandEnvelope = z.infer<
   typeof wsClientCommandEnvelopeSchema
+>;
+
+export type WsServerToClientEnvelope = z.infer<
+  typeof wsServerToClientEnvelopeSchema
 >;
 
 export type WsSetSession = z.infer<typeof wsSetSessionSchema>;

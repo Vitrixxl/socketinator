@@ -1,6 +1,7 @@
 import type { ZodNull, ZodObject, ZodRawShape } from "zod";
 import type {
   ReadGroups,
+  ReadHandlerReturnType,
   ReadKeys,
   ReadPayload,
   WithUserId,
@@ -33,6 +34,7 @@ export type ParsedIncomingMessage<
   group: keyof C;
   key: K;
   payload: P;
+  requestId: string;
 };
 
 export type CallbackStoreWithUserId<
@@ -41,7 +43,7 @@ export type CallbackStoreWithUserId<
 > = {
   [G in ReadGroups<C>]?: {
     [K in ReadKeys<C, G>]?: Set<
-      (d: WithUserId<ReadPayload<C, G, K>, U>) => void
+      (d: WithUserId<ReadPayload<C, G, K>, U>) => ReadHandlerReturnType<C, G, K>
     >;
   };
 };

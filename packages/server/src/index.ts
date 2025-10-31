@@ -4,9 +4,10 @@ import {
 } from "../contracts";
 import type {
   RateConfig,
-  WsClientCommandEnvelope,
+  WsServerToClientEnvelope,
   WsServerCommandEnvelope,
   WsServerInit,
+  WsServerResponse,
   WsServerSessionEvent,
 } from "../contracts";
 import { env } from "bun";
@@ -36,13 +37,17 @@ const isExpired = (exp: number): boolean => Date.now() > exp;
 let rateConfig: RateConfig = {};
 const requestCountMap = new Map<string, number>();
 
-const toClientCommand = (
-  data: WsServerCommandEnvelope,
-): WsClientCommandEnvelope => ({
-  group: data.group,
-  command: data.command,
-  requestId: data.requestId,
-});
+const toClientFormat = <T extends WsServerResponse | WsServerCommandEnvelope>(
+  data: T,
+): WsServerToClientEnvelope | WsServerResponse => {
+  if ("data" in data) {
+    return data;
+  }
+  return {
+    command: data.command,
+    group: data.group,
+  };
+};
 
 const handleSessionEvent = (data: WsServerSessionEvent["payload"]) => {
   switch (data.key) {
@@ -130,7 +135,7 @@ const app = new Elysia()
         userId,
         command: data.command,
         requestId: data.requestId,
-      } satisfies WsServerCommandEnvelope);
+      });
     },
 
     body: wsClientCommandEnvelopeSchema,
@@ -163,7 +168,7 @@ const app = new Elysia()
           const clients = userWsMap.get(data.payload.userId);
           if (!clients || clients.length === 0) break;
 
-          const clientCommand = toClientCommand(data.payload);
+          const clientCommand = toClientFormat(data.payload);
           for (const { ws } of clients) {
             ws.send(clientCommand);
           }

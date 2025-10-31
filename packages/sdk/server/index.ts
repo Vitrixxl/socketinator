@@ -1,4 +1,4 @@
-import { wsServerCommandEnvelopeSchema } from "../contracts";
+import { wsServerResponseEnvelopeSchema } from "../contracts";
 import type {
   CommandPayloadOf,
   SocketinatorServerParams,
@@ -18,7 +18,9 @@ import type {
   CommandsOf,
   WsServerInitEvent,
   ReadHandlerReturnType,
+  WsServerResponse,
 } from "../contracts";
+import { tryCatch } from "./utils";
 
 // Re-export all types and schemas from contracts
 export * from "../contracts";
@@ -102,12 +104,12 @@ export class Socketinator<
   ): ParsedIncomingMessageAny<WriteEntries["userId"], C> | null => {
     const candidate = typeof raw === "string" ? JSON.parse(raw) : raw;
 
-    const parsedEnvelope = wsServerCommandEnvelopeSchema.safeParse(candidate);
+    const parsedEnvelope = wsServerResponseEnvelopeSchema.safeParse(candidate);
     if (!parsedEnvelope.success) {
       throw new Error(`Invalid WS payload: ${parsedEnvelope.error.message}`);
     }
 
-    const { group, userId, command } = parsedEnvelope.data;
+    const { group, userId, command, requestId } = parsedEnvelope.data;
 
     if (!this.hasOwn(this.readEnvelopes, group)) return null;
     const groupEntry = this.readEnvelopes[group];
@@ -144,17 +146,18 @@ export class Socketinator<
       group: group as G,
       key: command.key as K,
       payload: payloadWithUser,
+      requestId,
     };
 
     return result;
   };
 
-  private dispatch = (
+  private dispatch = async (
     msg: ParsedIncomingMessageAny<WriteEntries["userId"], C> | null,
   ) => {
     if (!msg) return;
 
-    const { group, key, payload } = msg;
+    const { group, key, payload, requestId } = msg;
 
     if (!this.hasOwn(this.handlerStore, group)) return;
     const groupHandlers = this.handlerStore[group];
@@ -165,11 +168,33 @@ export class Socketinator<
 
     if (!callbacks?.size) return;
 
-    for (const cb of callbacks) cb(payload);
+    for (const cb of callbacks) {
+      const { data, error } = await tryCatch(cb(payload));
+      if (error) {
+        this.safeSend({
+          error: {
+            message: error.message,
+            details: error.cause,
+          },
+          data: null,
+          requestId,
+        });
+        continue;
+      }
+      this.safeSend({
+        data: data,
+        error: null,
+        requestId,
+      });
+    }
   };
 
   private safeSend = (
-    data: WsServerSessionEvent | WsServerDataEvent | WsServerInitEvent,
+    data:
+      | WsServerSessionEvent
+      | WsServerDataEvent
+      | WsServerInitEvent
+      | WsServerResponse,
   ) => {
     if (this.ws) {
       this.ws.send(JSON.stringify(data));

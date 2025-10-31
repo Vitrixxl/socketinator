@@ -13,6 +13,7 @@ export type WSCommandEntryWithUserId = {
   group: string;
   userId: string | number;
   command: WSCommand;
+  requestId: string;
 };
 
 export type CommandsOf<

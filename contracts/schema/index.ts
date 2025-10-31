@@ -5,10 +5,21 @@ export const wsCommandSchema = z.object({
   payload: z.any(),
 });
 // SERVER SCHEMAS
-export const wsServerCommandEnvelopeSchema = z.object({
+export const wsServerResponseEnvelopeSchema = z.object({
   group: z.string(),
   userId: z.string().or(z.number()),
   requestId: z.string(),
+  command: wsCommandSchema,
+});
+
+export const wsServerCommandEnvelopeSchema = z.object({
+  group: z.string(),
+  userId: z.string().or(z.number()),
+  command: wsCommandSchema,
+});
+
+export const wsServerToClientEnvelopeSchema = z.object({
+  group: z.string(),
   command: wsCommandSchema,
 });
 
@@ -69,8 +80,10 @@ export const wsServerMessageSchema = z.union([
 ]);
 
 // CLIENT SCHEMA
-export const wsClientCommandEnvelopeSchema = z.object({
-  group: z.string(),
-  command: wsCommandSchema,
-  requestId: z.string(),
-});
+export const wsClientCommandEnvelopeSchema = z.union([
+  z.object({
+    group: z.string(),
+    command: wsCommandSchema,
+    requestId: z.string(),
+  }),
+]);
