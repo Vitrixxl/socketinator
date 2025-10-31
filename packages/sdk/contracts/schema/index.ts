@@ -4,13 +4,30 @@ export const wsCommandSchema = z.object({
   key: z.string(),
   payload: z.any(),
 });
-
 // SERVER SCHEMAS
 export const wsServerCommandEnvelopeSchema = z.object({
   group: z.string(),
   userId: z.string().or(z.number()),
+  requestId: z.string(),
   command: wsCommandSchema,
 });
+
+const successResponse = z.object({
+  requestId: z.string(),
+  data: z.any(),
+  error: z.null(),
+});
+
+const errorResponse = z.object({
+  requestId: z.string(),
+  data: z.null(),
+  error: z.object({
+    message: z.string(),
+    details: z.record(z.string(), z.any()),
+  }),
+});
+
+export const wsServerResponseSchema = z.union([successResponse, errorResponse]);
 
 export const wsServerDataEventSchema = z.object({
   type: z.literal("data"),
@@ -55,4 +72,5 @@ export const wsServerMessageSchema = z.union([
 export const wsClientCommandEnvelopeSchema = z.object({
   group: z.string(),
   command: wsCommandSchema,
+  requestId: z.string(),
 });

@@ -6,6 +6,7 @@ export type WSCommand<K extends PropertyKey = string, P = unknown> = {
 export type WSCommandEntry = {
   group: string;
   command: WSCommand;
+  requestId: string;
 };
 
 export type WSCommandEntryWithUserId = {

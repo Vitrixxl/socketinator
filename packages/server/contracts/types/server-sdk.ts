@@ -5,6 +5,7 @@ import type {
   ReadPayload,
   WithUserId,
 } from "./server-utils";
+import type { ZodAny } from "zod";
 
 export type SocketinatorReadEntriesConfig = {
   [group: string]: {
@@ -14,6 +15,10 @@ export type SocketinatorReadEntriesConfig = {
        * @default 10
        */
       maxRequestPerSecond?: number;
+      /**
+       * To specify only if you want a reponse for the request on the client
+       */
+      responseSchema?: ZodAny;
     };
   };
 };
@@ -60,4 +65,6 @@ export type SocketinatorServerParams<C extends SocketinatorReadEntriesConfig> =
   {
     url: string;
     readEnvelopes: C;
+    onConnect: (e: Event) => void;
+    onClose: (e: CloseEvent) => void;
   };

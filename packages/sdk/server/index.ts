@@ -17,7 +17,7 @@ import type {
   WithUserId,
   CommandsOf,
   WsServerInitEvent,
-  WSCommand,
+  ReadHandlerReturnType,
 } from "../contracts";
 
 // Re-export all types and schemas from contracts
@@ -165,7 +165,7 @@ export class Socketinator<
 
     if (!callbacks?.size) return;
 
-    for (const cb of callbacks) cb(payload as any);
+    for (const cb of callbacks) cb(payload);
   };
 
   private safeSend = (
@@ -208,7 +208,7 @@ export class Socketinator<
     key: K,
     callback: (
       data: WithUserId<ReadPayload<C, G, K>, WriteEntries["userId"]>,
-    ) => void,
+    ) => ReadHandlerReturnType<C, G, K>,
   ) => {
     const groupHandlers = (this.handlerStore[group] ??= {} as NonNullable<
       CallbackStoreWithUserId<C, WriteEntries["userId"]>[G]
@@ -237,23 +237,4 @@ export class Socketinator<
       },
     } satisfies WsServerSessionEvent);
   };
-}
-
-type CommonChessCommands =
-  | WSCommand<"draw-offer", { gameId: string }>
-  | WSCommand<"draw-response", { response: boolean; gameId: string }>
-  | WSCommand<"resign", { gameId: string }>
-  | WSCommand<"message", { content: string; gameId: string }>;
-type ChessClientCommands =
-  | CommonChessCommands
-  | WSCommand<"move", { move: string; gameId: string }>;
-
-export type ClientsCommands = ChessClientCommands;
-
-export type ClientsEnvelopes = {
-  group: "chess";
-  command: ChessClientCommands;
-};
-export interface ClientsEnvelopesWithUserId extends ClientsEnvelopes {
-  userId: number;
 }

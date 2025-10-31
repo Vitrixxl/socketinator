@@ -6,6 +6,7 @@ import type {
   wsServerDataEventSchema,
   wsServerInitEventSchema,
   wsServerInitSchema,
+  wsServerResponseSchema,
   wsServerSessionEventSchema,
   wsSetSessionSchema,
 } from "../schema";
@@ -29,3 +30,5 @@ export type WsServerDataEvent = z.infer<typeof wsServerDataEventSchema>;
 export type WsServerInit = z.infer<typeof wsServerInitSchema>;
 
 export type WsServerInitEvent = z.infer<typeof wsServerInitEventSchema>;
+
+export type WsServerResponse = z.infer<typeof wsServerResponseSchema>;

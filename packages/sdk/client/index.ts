@@ -5,9 +5,9 @@ import type {
   CommandPayloadOf,
   SocketinatorClientParams,
   WSCommandEntry,
+  PendingRequest,
 } from "../contracts";
 
-// Re-export all types and schemas from contracts
 export * from "../contracts";
 
 export class SocketinatorClient<
@@ -16,9 +16,11 @@ export class SocketinatorClient<
 > {
   private ws: WebSocket;
   private handlerStore: CallbackStore<ReadEntries> = {};
+  private pendingRequests = new Map<string, PendingRequest>();
 
   onConnect: ((e: Event) => any) | null = null;
   onClose: ((e: CloseEvent) => null) | null = null;
+
   constructor({ url }: SocketinatorClientParams) {
     this.ws = new WebSocket(url);
     this.ws.onmessage = (event) => {
@@ -37,6 +39,23 @@ export class SocketinatorClient<
   }
 
   private handleRawMessage(raw: unknown) {
+    const candidate = typeof raw === "string" ? JSON.parse(raw) : raw;
+
+    if (candidate.requestId && this.pendingRequests.has(candidate.requestId)) {
+      const pending = this.pendingRequests.get(candidate.requestId)!;
+      clearTimeout(pending.timeoutId);
+      this.pendingRequests.delete(candidate.requestId);
+
+      // Check if it's an error response
+      if (candidate.error) {
+        pending.reject(new Error(candidate.error));
+      } else {
+        pending.resolve(candidate.command?.payload);
+      }
+      return;
+    }
+
+    // Normal message dispatch
     const parsed = this.parseIncoming(raw);
     this.dispatch(parsed);
   }
@@ -76,19 +95,43 @@ export class SocketinatorClient<
     group,
     key,
     payload,
+    timeout = 30000,
   }: {
     group: Group;
     key: Key;
     payload: CommandPayloadOf<WriteEntries, Group, Key>;
-  }) => {
-    this.ws.send(
-      JSON.stringify({
-        group,
-        command: {
-          key,
-          payload,
-        },
-      }),
+    timeout?: number;
+  }): Promise<CommandPayloadOf<ReadEntries, Group, Key>> => {
+    const requestId = crypto.randomUUID();
+
+    return new Promise<CommandPayloadOf<ReadEntries, Group, Key>>(
+      (resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          this.pendingRequests.delete(requestId);
+          reject(
+            new Error(
+              `Request timeout after ${timeout}ms for ${String(group)}.${String(key)}`,
+            ),
+          );
+        }, timeout);
+
+        this.pendingRequests.set(requestId, {
+          resolve,
+          reject,
+          timeoutId,
+        });
+
+        this.ws.send(
+          JSON.stringify({
+            requestId,
+            group,
+            command: {
+              key,
+              payload,
+            },
+          }),
+        );
+      },
     );
   };
 

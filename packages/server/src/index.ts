@@ -41,6 +41,7 @@ const toClientCommand = (
 ): WsClientCommandEnvelope => ({
   group: data.group,
   command: data.command,
+  requestId: data.requestId,
 });
 
 const handleSessionEvent = (data: WsServerSessionEvent["payload"]) => {
@@ -128,7 +129,8 @@ const app = new Elysia()
         group: data.group,
         userId,
         command: data.command,
-      });
+        requestId: data.requestId,
+      } satisfies WsServerCommandEnvelope);
     },
 
     body: wsClientCommandEnvelopeSchema,

@@ -11,3 +11,9 @@ export type CallbackStore<Entries extends WSCommandEntry> = {
     >;
   };
 };
+
+export type PendingRequest = {
+  resolve: (payload: any) => void;
+  reject: (error: Error) => void;
+  timeoutId: ReturnType<typeof setTimeout>;
+};

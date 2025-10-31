@@ -7,6 +7,9 @@ export type ReadEntryUnion<C extends SocketinatorReadEntriesConfig> = {
       group: G & string;
       key: K & string;
       payload: z.infer<C[G][K]["schema"]>;
+      response: C[G][K] extends null | undefined
+        ? void
+        : z.infer<C[G][K]["responseSchema"]>;
     };
   }[keyof C[G]];
 }[keyof C];
@@ -24,6 +27,11 @@ export type ReadPayload<
   G extends ReadGroups<C>,
   K extends ReadKeys<C, G>,
 > = Extract<Extract<ReadEntryUnion<C>, { group: G }>, { key: K }>["payload"];
+export type ReadHandlerReturnType<
+  C extends SocketinatorReadEntriesConfig,
+  G extends ReadGroups<C>,
+  K extends ReadKeys<C, G>,
+> = Extract<Extract<ReadEntryUnion<C>, { group: G }>, { key: K }>["response"];
 
 export type ParsedClientIncomingMessage<
   C extends SocketinatorReadEntriesConfig,
